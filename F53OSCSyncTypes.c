@@ -12,7 +12,15 @@
 #include <mach/mach_time.h>
 #include "F53OSCSyncTypes.h"
 
-F53OSCSyncLocation F53OSCSyncLocationMakeWithSeconds(double seconds)
+inline F53OSCSyncLocation F53OSCSyncLocationMake(uint32_t seconds, uint32_t fraction)
+{
+    return (F53OSCSyncLocation){
+        .seconds = seconds,
+        .fraction = fraction
+    };
+}
+
+inline F53OSCSyncLocation F53OSCSyncLocationMakeWithSeconds(double seconds)
 {
     double fraction = fmod( seconds, 1.0 ) * (double)UINT32_MAX;
     return (F53OSCSyncLocation){
@@ -21,7 +29,7 @@ F53OSCSyncLocation F53OSCSyncLocationMakeWithSeconds(double seconds)
     };
 }
 
-double F53OSCSyncLocationGetSeconds(F53OSCSyncLocation location)
+inline double F53OSCSyncLocationGetSeconds(F53OSCSyncLocation location)
 {
     double fraction = (double)location.fraction / (double)UINT32_MAX;
     return (double)location.seconds + fraction;

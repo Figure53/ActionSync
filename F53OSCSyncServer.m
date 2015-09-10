@@ -64,9 +64,10 @@
 - (void) _sendPongToSocket:(F53OSCSocket *)socket
 {
     double now = machTimeInSeconds();
+    F53OSCSyncLocation nowAsLocation = F53OSCSyncLocationMakeWithSeconds( now );
     F53OSCMessage *pong = [F53OSCMessage new];
     pong.addressPattern = @"/timeline/pong";
-    pong.arguments = @[ @( now ) ];
+    pong.arguments = @[ @( nowAsLocation.seconds ), @( nowAsLocation.fraction ) ];
     [socket sendPacket:pong];
 }
 

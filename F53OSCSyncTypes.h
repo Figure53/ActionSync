@@ -14,6 +14,7 @@ typedef struct {
     uint32_t fraction;  ///< remainder * 2^32
 } F53OSCSyncLocation;
 
+F53OSCSyncLocation F53OSCSyncLocationMake(uint32_t seconds, uint32_t fraction);
 F53OSCSyncLocation F53OSCSyncLocationMakeWithSeconds(double seconds);
 double F53OSCSyncLocationGetSeconds(F53OSCSyncLocation location);
 double machTimeInSeconds();

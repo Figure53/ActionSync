@@ -137,9 +137,9 @@
 - (void) _handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
 {
     double oneWayLatency = ( machTimeInSeconds - _lastPingMachTime ) * 0.5;
-    double serverHostTime = [arguments[0] doubleValue];
+    F53OSCSyncLocation serverHostLocation = F53OSCSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
+    double serverHostTime = F53OSCSyncLocationGetSeconds( serverHostLocation );
     double secondsToAdd = machTimeInSeconds - serverHostTime - oneWayLatency;
-    NSLog( @"latency %0.02fms, offset %0.02fms", 1000.0 * oneWayLatency, 1000.0 * secondsToAdd );
 
     // Clear out old measurements and append this new one.
     while ( _offsetMeasurements.count >= 40 )
@@ -155,8 +155,8 @@
         avg += [offset doubleValue];
     }
     avg /= (double)_offsetMeasurements.count;
-    NSLog( @"Mean offset:     %0.02fms", 1000.0 * avg );
     _averageOffset = avg;
+    NSLog( @"avg %0.03f", 1000.0 * _averageOffset );
 }
 
 // Arguments: <timeline_location:L> <nominal_rate:f> <server_host_time:L>
