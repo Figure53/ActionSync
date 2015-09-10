@@ -43,14 +43,14 @@ In general, if we assume that there's some other clocking mechanism (e.g. AVB or
 
 ### `/timeline/pong`
 
-Arguments: `server host time` (time)
+Arguments: `server host time` ([time](#time-def))
 
 Sent in response to `/timeline/ping`.
 
 
 ### `/timeline/<id>/start`
 
-Arguments: `timeline location` (time), `nominal rate` (float), `server host time` (time)
+Arguments: `timeline location` ([time](#time-def)), `nominal rate` (float), `server host time` ([time](#time-def))
 
 Sent when any timeline starts, or in response to `/timeline/catchup` for each timeline that is currently running. When a client receives this message, it should start the corresponding timeline, using `timeline location` as an anchor point and extrapolating from its knowledge of the server's host time.
 
@@ -59,21 +59,21 @@ Note: Receiving this message is, aside from the ping cycle, the only time when t
 
 ### `/timeline/<id>/stop`
 
-Arguments: `timeline location` (time, optional)
+Arguments: `timeline location` ([time](#time-def), optional)
 
 Stops the corresponding timeline. If `timeline location` is provided and in the past, the timeline's playhead should scrub back to that position to end at the same time as the server. If it is provided and in the future, the client should schedule a stop at the appropriate moment in the timeline. If not provided, the client should simply stop the timeline immediately.
 
 
 ### `/timeline/<id>/scrub`
 
-Arguments: `timeline location` (time)
+Arguments: `timeline location` ([time](#time-def))
 
 Scrubs the timeline, leaving it paused at `timeline location`.
 
 
 ### `/timeline/<id>/rate`
 
-Arguments: `timeline location` (time), `new nominal rate` (float)
+Arguments: `timeline location` ([time](#time-def)), `new nominal rate` (float)
 
 Denotes a change in the nominal playback rate of the timeline. Clients should use `timeline location` as a new anchor point for all timing calculations occurring after this rate change.
 
@@ -106,3 +106,10 @@ Clients may send this once enough latency calculations have been made to establi
 Arguments: none
 
 Clients should send this before disconnecting, as a courtesy notice to the server that it may stop sending to a particular client.
+
+
+<a name="time-def"></a>
+
+## Time structure
+
+OSC's native types are limited to 32 bits, which is insufficient for high-precision timing. So for arguments listed as "time" above, we take an approach similar to NTP and OSC's time tag structure, splitting the time in seconds into two 32-bit integers. The first carries the integer portion of the value, while the second carries the remainder (multiplied by 2^32).
