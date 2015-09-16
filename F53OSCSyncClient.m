@@ -8,6 +8,7 @@
 
 #import "F53OSCSyncClient.h"
 #import "F53OSCSyncClientTimelineProtocol.h"
+#import "F53OSCSyncMeasurement.h"
 #import "F53OSC.h"
 
 @interface F53OSCSyncClient() <F53OSCClientDelegate, F53OSCPacketDestination>
@@ -138,25 +139,57 @@
 {
     double oneWayLatency = ( machTimeInSeconds - _lastPingMachTime ) * 0.5;
     F53OSCSyncLocation serverHostLocation = F53OSCSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
+    double estimatedLocalTime = _lastPingMachTime + oneWayLatency;
     double serverHostTime = F53OSCSyncLocationGetSeconds( serverHostLocation );
-    double secondsToAdd = machTimeInSeconds - serverHostTime - oneWayLatency;
+    double secondsToAdd = estimatedLocalTime - serverHostTime;
+    
+    F53OSCSyncMeasurement *measurement = [F53OSCSyncMeasurement new];
+    measurement.oneWayLatency = @( oneWayLatency );
+    measurement.clockOffset = @( secondsToAdd );
 
     // Clear out old measurements and append this new one.
-    while ( _offsetMeasurements.count >= 40 )
+    while ( _offsetMeasurements.count >= 200 )
     {
         [_offsetMeasurements removeObjectAtIndex:0];
     }
-    [_offsetMeasurements addObject:@( secondsToAdd )];
+    [_offsetMeasurements addObject:measurement];
+    
+    // A naive implementation could simply calculate the average. However, after discarding some outliers, it seems that there's a linear correlation
+    // between the measured latency and the error in the offset. So we'll do a linear regression, and use the intercept to determine the offset from the host.
+    NSArray *sortedMeasurements = [_offsetMeasurements sortedArrayUsingSelector:@selector( compareLatency: )];
+    double xBar = 0.0, yBar = 0.0, xyBar = 0.0, xxBar = 0.0;
+    for ( NSUInteger i = 0; i < sortedMeasurements.count * 2 / 3; i++ )
+    {
+        F53OSCSyncMeasurement *measurement = sortedMeasurements[i];
+        double x = measurement.oneWayLatency.doubleValue, y = measurement.clockOffset.doubleValue;
+        xBar += x;
+        yBar += y;
+        xxBar += x * x;
+        xyBar += x * y;
+    }
+    double count = (double)( sortedMeasurements.count * 2 / 3 );
+    xBar /= count;
+    yBar /= count;
+    xxBar /= count;
+    xyBar /= count;
+    double slope = ( xyBar - xBar * yBar ) / ( xxBar - xBar * xBar );
+    _averageOffset = yBar - slope * xBar;
     
     // Calculate and cache the average, which we'll use for timing calculations.
-    double avg = 0.0;
-    for ( NSNumber *offset in _offsetMeasurements )
-    {
-        avg += [offset doubleValue];
-    }
-    avg /= (double)_offsetMeasurements.count;
-    _averageOffset = avg;
-    NSLog( @"avg %0.03f", 1000.0 * _averageOffset );
+//    double avg = 0.0;
+//    double totalWeight = 0.0;
+//    NSArray *sortedMeasurements = [_offsetMeasurements sortedArrayUsingSelector:@selector( compareLatency: )];
+//    for ( NSUInteger i = 0; i < sortedMeasurements.count * 2 / 3; i++ )
+//    {
+//        F53OSCSyncMeasurement *measurement = sortedMeasurements[i];
+//        double weight = ( i < 10 ? 10.0 : i < 50 ? 1.0 : 0.25 );
+//        avg += [measurement.clockOffset doubleValue] * weight;
+//        totalWeight += weight;
+//    }
+//    avg /= totalWeight;
+//    _averageOffset = avg;
+//    NSLog( @"avg %0.03f", 1000.0 * _averageOffset );
+    NSLog( @"%0.03f, %0.03f, %0.03f", oneWayLatency * 1000.0, secondsToAdd * 1000.0, _averageOffset * 1000.0 );
 }
 
 // Arguments: <timeline_location:L> <nominal_rate:f> <server_host_time:L>
