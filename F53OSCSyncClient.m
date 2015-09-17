@@ -11,11 +11,15 @@
 #import "F53OSCSyncMeasurement.h"
 #import "F53OSC.h"
 
-@interface F53OSCSyncClient() <F53OSCClientDelegate, F53OSCPacketDestination>
+@interface F53OSCSyncClient() <F53OSCClientDelegate, F53OSCPacketDestination, NSNetServiceBrowserDelegate, NSNetServiceDelegate>
 {
     F53OSCClient *_oscClient;
+    NSNetServiceBrowser *_netServiceBrowser;
+    NSMutableArray *_unresolvedServices;    ///< NSNetServices
+    NSMutableSet *_availableServices;     ///< Dictionaries
+    void (^_searchSuccessHandler)(NSSet *);
     double _lastPingMachTime;
-    NSMutableArray *_offsetMeasurements; ///< seconds to add to server's host clock, assuming latency is corrected for
+    NSMutableArray *_offsetMeasurements;
     double _averageOffset;
     NSTimer *_pingTimer;
 }
@@ -33,8 +37,18 @@
     {
         _offsetMeasurements = [NSMutableArray array];
         self.registeredTimelines = [NSMutableDictionary dictionary];
+        _availableServices = [NSMutableSet set];
+        _unresolvedServices = [NSMutableArray array];
     }
     return self;
+}
+
+- (void) searchForServers:(void (^)(NSArray *))success
+{
+    _searchSuccessHandler = [success copy];
+    _netServiceBrowser = [[NSNetServiceBrowser alloc] init];
+    _netServiceBrowser.delegate = self;
+    [_netServiceBrowser searchForServicesOfType:@"_f53oscsync._tcp" inDomain:@"local."];
 }
 
 - (BOOL) connectToHost:(NSString *)host port:(UInt16)port
@@ -156,6 +170,7 @@
     
     // A naive implementation could simply calculate the average. However, after discarding some outliers, it seems that there's a linear correlation
     // between the measured latency and the error in the offset. So we'll do a linear regression, and use the intercept to determine the offset from the host.
+    // TODO: Is it worth parallelizing this code?
     NSArray *sortedMeasurements = [_offsetMeasurements sortedArrayUsingSelector:@selector( compareLatency: )];
     double xBar = 0.0, yBar = 0.0, xyBar = 0.0, xxBar = 0.0;
     for ( NSUInteger i = 0; i < sortedMeasurements.count * 2 / 3; i++ )
@@ -174,21 +189,7 @@
     xyBar /= count;
     double slope = ( xyBar - xBar * yBar ) / ( xxBar - xBar * xBar );
     _averageOffset = yBar - slope * xBar;
-    
-    // Calculate and cache the average, which we'll use for timing calculations.
-//    double avg = 0.0;
-//    double totalWeight = 0.0;
-//    NSArray *sortedMeasurements = [_offsetMeasurements sortedArrayUsingSelector:@selector( compareLatency: )];
-//    for ( NSUInteger i = 0; i < sortedMeasurements.count * 2 / 3; i++ )
-//    {
-//        F53OSCSyncMeasurement *measurement = sortedMeasurements[i];
-//        double weight = ( i < 10 ? 10.0 : i < 50 ? 1.0 : 0.25 );
-//        avg += [measurement.clockOffset doubleValue] * weight;
-//        totalWeight += weight;
-//    }
-//    avg /= totalWeight;
-//    _averageOffset = avg;
-//    NSLog( @"avg %0.03f", 1000.0 * _averageOffset );
+
     NSLog( @"%0.03f, %0.03f, %0.03f", oneWayLatency * 1000.0, secondsToAdd * 1000.0, _averageOffset * 1000.0 );
 }
 
@@ -227,6 +228,55 @@
     double delay = ( _offsetMeasurements.count < 10 ? 0.1 : _offsetMeasurements.count < 25 ? 0.3 : 1.0 );
     [_pingTimer invalidate];
     _pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector( _sendPing ) userInfo:nil repeats:NO];
+}
+
+- (BOOL) connected
+{
+    return ( _offsetMeasurements.count > 10 );
+}
+
+#pragma mark - NSNetServiceBrowserDelegate
+
+- (void) netServiceBrowser:(NSNetServiceBrowser *)aNetServiceBrowser didFindService:(NSNetService *)netService moreComing:(BOOL)moreComing
+{
+    [_unresolvedServices addObject:netService];
+    netService.delegate = self;
+    [netService resolveWithTimeout:5.0];
+}
+
+- (void) netServiceBrowser:(NSNetServiceBrowser *)aNetServiceBrowser didNotSearch:(NSDictionary *)errorDict
+{
+    NSLog( @"Did not search: %@", errorDict );
+}
+
+- (void) netServiceBrowserWillSearch:(NSNetServiceBrowser *)aNetServiceBrowser
+{
+    [_availableServices removeAllObjects];
+}
+
+#pragma mark - NSNetServiceDelegate
+
+- (void) netService:(NSNetService *)sender didNotResolve:(NSDictionary *)errorDict
+{
+    NSLog( @"Did not resolve: %@", errorDict );
+    [_unresolvedServices removeObject:sender];
+    [self _notifyIfAllResolved];
+}
+
+- (void) netServiceDidResolveAddress:(NSNetService *)sender
+{
+    NSDictionary *info = @{ @"host": sender.hostName, @"port": @( sender.port ), @"name": sender.name };
+    [_availableServices addObject:info];
+    [_unresolvedServices removeObject:sender];
+    [self _notifyIfAllResolved];
+}
+
+- (void) _notifyIfAllResolved
+{
+    if ( _unresolvedServices.count == 0 && _searchSuccessHandler )
+    {
+        _searchSuccessHandler( [_availableServices copy] );
+    }
 }
 
 @end

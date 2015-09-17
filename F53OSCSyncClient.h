@@ -14,6 +14,9 @@
 
 @property (strong) NSMutableDictionary *registeredTimelines;
 @property (readonly) double offsetFromServerClock;
+@property (readonly) BOOL connected;
+
+- (void) searchForServers:(void (^)(NSSet *))success; ///< Passes a set of dictionaries, with @"name", @"host", and @"port" keys.
 
 - (BOOL) connectToHost:(NSString *)host port:(UInt16)port;
 - (void) disconnect;

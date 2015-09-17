@@ -10,7 +10,10 @@
 
 @interface F53OSCSyncServer : NSObject
 
+@property (copy) NSString *publishedServiceName; ///< Normally this should be the application name.
+
 - (BOOL) startListeningOnPort:(uint16_t)port;
+- (BOOL) startListeningOnPort:(uint16_t)port withPublishedServiceName:(NSString *)publishedServiceName;
 - (void) stopListening;
 
 @end
