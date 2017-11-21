@@ -43,7 +43,7 @@
     return self;
 }
 
-- (void) searchForServers:(void (^)(NSArray *))success
+- (void) searchForServers:(void (^)(NSSet *))success
 {
     _searchSuccessHandler = [success copy];
     _netServiceBrowser = [[NSNetServiceBrowser alloc] init];
