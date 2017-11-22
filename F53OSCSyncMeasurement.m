@@ -18,4 +18,9 @@
     return NSOrderedDescending;
 }
 
+- (NSString *) description
+{
+    return [NSString stringWithFormat:@"<Sync Measurement; %@ one-way latency; %@ clock offset", self.oneWayLatency, self.clockOffset];
+}
+
 @end

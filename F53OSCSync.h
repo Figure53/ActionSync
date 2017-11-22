@@ -9,4 +9,5 @@
 #import "F53OSCSyncTypes.h"
 #import "F53OSCSyncServer.h"
 #import "F53OSCSyncClient.h"
-#import "F53OSCSyncClientTimelineProtocol.h"
+#import "F53OSCSyncClientDelegate.h"
+#import "F53OSCSyncServerTimelineProtocol.h"

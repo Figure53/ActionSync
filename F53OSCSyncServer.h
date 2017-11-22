@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "F53OSCSyncServerTimeline.h"
 
 @interface F53OSCSyncServer : NSObject
 
@@ -15,5 +16,8 @@
 - (BOOL) startListeningOnPort:(uint16_t)port;
 - (BOOL) startListeningOnPort:(uint16_t)port withPublishedServiceName:(NSString *)publishedServiceName;
 - (void) stopListening;
+
+- (void) registerTimeline:(id<F53OSCSyncServerTimeline>)timeline; ///< See the F53OSCSyncServerTimeline protocol for requirements and discussion.
+- (void) unregisterTimeline:(id<F53OSCSyncServerTimeline>)timeline;
 
 @end

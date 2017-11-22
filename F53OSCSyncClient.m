@@ -115,6 +115,7 @@
 
 - (void) takeMessage:(F53OSCMessage *)message
 {
+    NSLog( @"take %@", message.addressPattern );
     double now = machTimeInSeconds();
     if ( [message.addressPattern isEqualToString:@"/timeline/pong"] )
     {
@@ -190,7 +191,7 @@
     double slope = ( xyBar - xBar * yBar ) / ( xxBar - xBar * xBar );
     _averageOffset = yBar - slope * xBar;
 
-    NSLog( @"%0.03f, %0.03f, %0.03f", oneWayLatency * 1000.0, secondsToAdd * 1000.0, _averageOffset * 1000.0 );
+    NSLog( @"%@, %0.06f", measurement, _averageOffset );
 }
 
 // Arguments: <timeline_location:L> <nominal_rate:f> <server_host_time:L>

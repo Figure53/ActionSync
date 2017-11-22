@@ -15,6 +15,9 @@
     F53OSCServer *_oscServer;
     NSNetService *_netService;
     double _lastPongExecutionTime;
+    
+    NSMutableSet<NSDictionary *> *_subscribers;
+    NSMutableSet<id<F53OSCSyncServerTimeline>> *_timelines;
 }
 
 @end
@@ -28,6 +31,7 @@
     self = [super init];
     if ( self )
     {
+        _subscribers = [NSMutableSet set];
     }
     return self;
 }
@@ -63,6 +67,16 @@
     _oscServer = nil;
 }
 
+- (void) registerTimeline:(id<F53OSCSyncServerTimeline>)timeline
+{
+    // TODO: add to _timelines; observe for @"F53OSCSyncTimelineStateDidChange" notifications
+}
+
+- (void) unregisterTimeline:(id<F53OSCSyncServerTimeline>)timeline
+{
+    // TODO: remove from _timelines; remove observation for @"F53OSCSyncTimelineStateDidChange" notifications
+}
+
 #pragma mark - F53OSCPacketDestination
 
 - (void) takeMessage:(F53OSCMessage *)message
@@ -76,6 +90,26 @@
     {
         [self _sendPongToSocket:message.replySocket];
     }
+    else if ( [message.addressPattern isEqualToString:@"/timeline/subscribe"] )
+    {
+        NSDictionary *subscriber = @{ @"socket": message.replySocket };
+        @synchronized ( self )
+        {
+            [_subscribers addObject:subscriber];
+        }
+    }
+    else if ( [message.addressPattern isEqualToString:@"/timeline/catchup"] )
+    {
+        
+    }
+    else if ( [message.addressPattern isEqualToString:@"/timeline/unsubscribe"] )
+    {
+        NSDictionary *subscriber = @{ @"socket": message.replySocket };
+        @synchronized ( self )
+        {
+            [_subscribers removeObject:subscriber];
+        }
+    }
 }
 
 - (void) _sendPongToSocket:(F53OSCSocket *)socket
@@ -86,6 +120,44 @@
     pong.addressPattern = @"/timeline/pong";
     pong.arguments = @[ @( nowAsLocation.seconds ), @( nowAsLocation.fraction ) ];
     [socket sendPacket:pong];
+}
+
+- (void) _sendStartMessageForTimelineID:(NSString *)timelineID
+                      timelineLocation:(double)timelineLocationSeconds
+                           nominalRate:(float)nominalRate
+                        serverHostTime:(double)serverHostTimeSeconds
+{
+    F53OSCSyncLocation timelineLocation = F53OSCSyncLocationMakeWithSeconds( timelineLocationSeconds );
+    F53OSCSyncLocation serverHostTime = F53OSCSyncLocationMakeWithSeconds( serverHostTimeSeconds );
+    F53OSCMessage *msg = [F53OSCMessage new];
+    msg.addressPattern = [NSString stringWithFormat:@"/timeline/%@/start", timelineID];
+    msg.arguments = @[ @( timelineLocation.seconds ), @( timelineLocation.fraction ), @( nominalRate ), @( serverHostTime.seconds ), @( serverHostTime.fraction ) ];
+    // TODO: finish this
+}
+
+- (void) _sendStopMessageForTimelineID:(NSString *)timelineID
+                     timelineLocation:(double)timelineLocationSeconds
+{
+    // TODO: this
+}
+
+- (void) _sendScrubMessageForTimelineID:(NSString *)timelineID
+                      timelineLocation:(double)timelineLocationSeconds
+{
+    // TODO: this
+}
+
+- (void) _sendRateMessageForTimelineID:(NSString *)timelineID
+                     timelineLocation:(double)timelineLocationSeconds
+                       newNominalRate:(float)nominalRate
+{
+    // TODO: this
+}
+
+- (void) _sendLoadMessageForTimelineID:(NSString *)timelineID
+                     timelineLocation:(float)timelineLocationSeconds
+{
+    // TODO: this
 }
 
 #pragma mark - NSNetServiceDelegate

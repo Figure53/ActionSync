@@ -12,7 +12,7 @@
 
 @interface F53OSCSyncClient : NSObject
 
-@property (strong) NSMutableDictionary *registeredTimelines;
+@property (strong) NSMutableDictionary<NSNumber *, id<F53OSCSyncClientTimeline>> *registeredTimelines;
 @property (readonly) double offsetFromServerClock;
 @property (readonly) BOOL connected;
 

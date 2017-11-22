@@ -9,6 +9,8 @@
 #ifndef __F53OSCSync__F53OSCSyncTypes__
 #define __F53OSCSync__F53OSCSyncTypes__
 
+// In F53OSCSync nomenclature, a "location" is a point on a timeline, in seconds. OSC doesn't support types with more than 32 bits of resolution, so we split it into two 32-bit types, much like NTP and the OSC time tag do.
+
 typedef struct {
     uint32_t seconds;
     uint32_t fraction;  ///< remainder * 2^32

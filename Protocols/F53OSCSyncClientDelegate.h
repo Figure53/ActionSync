@@ -6,9 +6,11 @@
 //
 //
 
-/* Definitions
+/* 
  
- A "location" is a point on a timeline, in seconds. OSC doesn't support types with more than 32 bits of resolution, so we split it into two 32-bit types, much like NTP and the OSC time tag do.
+ The F53OSCSyncClientDelegate protocol allows a controller object to receive notifications about changes to timeline status on the server end.
+ 
+ If you are hosting an F53OSCSyncClient, you should have a (most likely single) controller object that implements this protocol.
  
  */
 
@@ -20,21 +22,19 @@
 @import Foundation;
 #include "F53OSCSyncTypes.h"
 
-@protocol F53OSCSyncClientTimeline <NSObject>
-
-- (NSUInteger) uniqueIDForSyncClient;
+@protocol F53OSCSyncClientDelegate <NSObject>
 
 @optional
 
-- (void) syncClientDidStartTimelineID:(UInt64)timelineID
+- (void) syncClientDidStartTimelineID:(NSString *)timelineID
                            atLocation:(F53OSCSyncLocation)location
                              withRate:(float)rate
                            atHostTime:(double)hostTimeInSeconds;
-- (void) syncClientDidStopTimelineID:(UInt64)timelineID;
-- (void) syncClientDidChangeRateForTimelineID:(UInt64)timelineID
+- (void) syncClientDidStopTimelineID:(NSString *)timelineID;
+- (void) syncClientDidChangeRateForTimelineID:(NSString *)timelineID
                                    atLocation:(F53OSCSyncLocation)location
                                   withNewRate:(float)rate;
-- (void) syncClientDidScrubTimelineID:(UInt64)timelineID
+- (void) syncClientDidScrubTimelineID:(NSString *)timelineID
                            toLocation:(F53OSCSyncLocation)location;
 
 @end
