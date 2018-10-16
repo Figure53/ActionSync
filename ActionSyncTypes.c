@@ -1,6 +1,6 @@
 //
-//  F53OSCSyncTypes.c
-//  F53OSCSync
+//  ActionSyncTypes.c
+//  Action Sync
 //
 //  Created by Sean Dougall on 9/9/15.
 //
@@ -10,26 +10,26 @@
 #include <assert.h>
 #include <mach/mach.h>
 #include <mach/mach_time.h>
-#include "F53OSCSyncTypes.h"
+#include "ActionSyncTypes.h"
 
-inline F53OSCSyncLocation F53OSCSyncLocationMake(uint32_t seconds, uint32_t fraction)
+inline ActionSyncLocation ActionSyncLocationMake(uint32_t seconds, uint32_t fraction)
 {
-    return (F53OSCSyncLocation){
+    return (ActionSyncLocation){
         .seconds = seconds,
         .fraction = fraction
     };
 }
 
-inline F53OSCSyncLocation F53OSCSyncLocationMakeWithSeconds(double seconds)
+inline ActionSyncLocation ActionSyncLocationMakeWithSeconds(double seconds)
 {
     double fraction = fmod( seconds, 1.0 ) * (double)UINT32_MAX;
-    return (F53OSCSyncLocation){
+    return (ActionSyncLocation){
         .seconds = (uint32_t)trunc( seconds ),
         .fraction = (uint32_t)fraction
     };
 }
 
-inline double F53OSCSyncLocationGetSeconds(F53OSCSyncLocation location)
+inline double ActionSyncLocationGetSeconds(ActionSyncLocation location)
 {
     double fraction = (double)location.fraction / (double)UINT32_MAX;
     return (double)location.seconds + fraction;

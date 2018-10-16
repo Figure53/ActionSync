@@ -1,16 +1,16 @@
 //
-//  F53OSCSyncMeasurement.m
-//  F53OSCSync
+//  ActionSyncMeasurement.m
+//  Action Sync
 //
 //  Created by Sean Dougall on 9/15/15.
 //
 //
 
-#import "F53OSCSyncMeasurement.h"
+#import "ActionSyncMeasurement.h"
 
-@implementation F53OSCSyncMeasurement
+@implementation ActionSyncMeasurement
 
-- (NSComparisonResult) compareLatency:(F53OSCSyncMeasurement *)otherMeasurement
+- (NSComparisonResult) compareLatency:(ActionSyncMeasurement *)otherMeasurement
 {
     if ( self.oneWayLatency.doubleValue < otherMeasurement.oneWayLatency.doubleValue )
         return NSOrderedAscending;

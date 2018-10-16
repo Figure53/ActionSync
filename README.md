@@ -1,10 +1,10 @@
-# F53OSCSync protocol
+# Action Sync protocol
 
-Version 0.1 (2015-09-10)
+Version 0.2 (2018-10-16)
 
 ## Introduction
 
-F53OSCSync is an attempt to address some of the shortcomings of timecode, particularly as it is used in theatrical contexts. Timecode currently gets used for several things, some well and some badly:
+Action Sync is an attempt to address some of the shortcomings of timecode, particularly as it is used in theatrical contexts. Timecode currently gets used for several things, some well and some badly:
 
 - Nominal rate
 - Clock drift correction
@@ -22,11 +22,11 @@ One last shortcoming of timecode is that it only supports one timeline at any gi
 
 ## Protocol structure
 
-F53OSCSync is built upon OSC. It is a client-server model, with one server and zero or more clients. Messages are transmitted over a TCP connection initiated by the client. Multiple independent timelines are supported, and any number can run simultaneously (subject to reason and network bandwidth, of course).
+Action Sync is built upon OSC. It is a client-server model, with one server and zero or more clients. Messages are transmitted over a TCP connection initiated by the client. Multiple independent timelines are supported, and any number can run simultaneously (subject to reason and network bandwidth, of course).
 
-The approach of F53OSCSync falls into two parts: (1) allow the server to share its host clock, to establish a common frame of reference that clients can use, and (2) send control messages to clients.
+The approach of Action Sync falls into two parts: (1) allow the server to share its host clock, to establish a common frame of reference that clients can use, and (2) send control messages to clients.
 
-A client initiates a connection with `/timeline/subscribe` (and keeps that connection alive), followed by a series of `/timeline/ping` messages. The server then responds to those pings with `/timeline/pong`, which carries the server's host time. The client measures the round-trip latency, halves it to estimate the one-way latency, and uses that to calculate its own host clock's offset from the server's.
+A client initiates a connection with `/actionsync/subscribe` (and keeps that connection alive), followed by a series of `/actionsync/ping` messages. The server then responds to those pings with `/actionsync/pong`, which carries the server's host time. The client measures the round-trip latency, halves it to estimate the one-way latency, and uses that to calculate its own host clock's offset from the server's.
 
 The server then sends each subscribed client control messages in response to any playback changes on its end. Since the client has an approximate knowledge of the server's host time, it uses that knowledge to follow along at home.
 
@@ -41,37 +41,37 @@ In general, if we assume that there's some other clocking mechanism (e.g. AVB or
 
 ## Messages sent by server
 
-### `/timeline/pong`
+### `/actionsync/pong`
 
 Arguments: `server host time` ([time](#time-def))
 
-Sent in response to `/timeline/ping`.
+Sent in response to `/actionsync/ping`.
 
 
-### `/timeline/<id>/start`
+### `/actionsync/<id>/start`
 
 Arguments: `timeline location` ([time](#time-def)), `nominal rate` (float), `server host time` ([time](#time-def))
 
-Sent when any timeline starts, or in response to `/timeline/catchup` for each timeline that is currently running. When a client receives this message, it should start the corresponding timeline, using `timeline location` as an anchor point and extrapolating from its knowledge of the server's host time.
+Sent when any timeline starts, or in response to `/actionsync/catchup` for each timeline that is currently running. When a client receives this message, it should start the corresponding timeline, using `timeline location` as an anchor point and extrapolating from its knowledge of the server's host time.
 
 Note: Receiving this message is, aside from the ping cycle, the only time when the client cares about the server host time. 
 
 
-### `/timeline/<id>/stop`
+### `/actionsync/<id>/stop`
 
 Arguments: `timeline location` ([time](#time-def), optional)
 
 Stops the corresponding timeline. If `timeline location` is provided and in the past, the timeline's playhead should scrub back to that position to end at the same time as the server. If it is provided and in the future, the client should schedule a stop at the appropriate moment in the timeline. If not provided, the client should simply stop the timeline immediately.
 
 
-### `/timeline/<id>/scrub`
+### `/actionsync/<id>/scrub`
 
 Arguments: `timeline location` ([time](#time-def))
 
 Scrubs the timeline, leaving it paused at `timeline location`.
 
 
-### `/timeline/<id>/rate`
+### `/actionsync/<id>/rate`
 
 Arguments: `timeline location` ([time](#time-def)), `new nominal rate` (float)
 
@@ -80,28 +80,28 @@ Denotes a change in the nominal playback rate of the timeline. Clients should us
 
 ## Messages sent by client
 
-### `/timeline/subscribe`
+### `/actionsync/subscribe`
 
 Arguments: none
 
 Clients send this mesage to the server to begin receiving /start, /stop, /scrub, and /rate messages. By leaving the TCP connection open after sending this, the client provides the server with a reply port, with the server needing no prior knowledge of the client's configuration.
 
 
-### `/timeline/ping`
+### `/actionsync/ping`
 
 Arguments: none
 
-Clients send this to request a `/timeline/pong` message from the server. Use the roundtrip time for these two messages to calculate an estimated one-way latency. Since this latency calculation is critical, `/timeline/ping` should be sent relatively frequently until a good sense of the netwok latency is achieved. After that, it can be sent less frequently.
+Clients send this to request a `/actionsync/pong` message from the server. Use the roundtrip time for these two messages to calculate an estimated one-way latency. Since this latency calculation is critical, `/actionsync/ping` should be sent relatively frequently until a good sense of the netwok latency is achieved. After that, it can be sent less frequently.
 
 
-### `/timeline/catchup`
+### `/actionsync/catchup`
 
 Arguments: none
 
-Clients may send this once enough latency calculations have been made to establish an offset from the server's host time. This invites the server to send `/timeline/start` messages for any timelines that are currently running, or `/timeline/scrub` messages for any timelines that are currently paused. If a client is not interested in playback that began before it connected up, it may opt not to send this message.
+Clients may send this once enough latency calculations have been made to establish an offset from the server's host time. This invites the server to send `/actionsync/start` messages for any timelines that are currently running, or `/actionsync/scrub` messages for any timelines that are currently paused. If a client is not interested in playback that began before it connected up, it may opt not to send this message.
 
 
-### `/timeline/unsubscribe`
+### `/actionsync/unsubscribe`
 
 Arguments: none
 

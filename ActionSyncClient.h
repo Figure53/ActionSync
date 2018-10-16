@@ -1,6 +1,6 @@
 //
-//  F53OSCSyncClient.h
-//  F53OSCSync
+//  ActionSyncClient.h
+//  Action Sync
 //
 //  Created by Sean Dougall on 9/9/15.
 //
@@ -8,11 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
-@protocol F53OSCSyncClientTimeline;
+@protocol ActionSyncClientDelegate;
 
-@interface F53OSCSyncClient : NSObject
+@interface ActionSyncClient : NSObject
 
-@property (strong) NSMutableDictionary<NSNumber *, id<F53OSCSyncClientTimeline>> *registeredTimelines;
+@property (weak) id<ActionSyncClientDelegate> delegate;
 @property (readonly) double offsetFromServerClock;
 @property (readonly) BOOL connected;
 
@@ -20,8 +20,5 @@
 
 - (BOOL) connectToHost:(NSString *)host port:(UInt16)port;
 - (void) disconnect;
-
-- (void) registerTimeline:(id<F53OSCSyncClientTimeline>)timeline;
-- (void) unregisterTimeline:(id<F53OSCSyncClientTimeline>)timeline;
 
 @end

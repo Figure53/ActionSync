@@ -1,30 +1,30 @@
 //
-//  F53OSCSyncServer.m
-//  F53OSCSync
+//  ActionSyncServer.m
+//  Action Sync
 //
 //  Created by Sean Dougall on 9/9/15.
 //
 //
 
-#import "F53OSCSyncServer.h"
+#import "ActionSyncServer.h"
 #import "F53OSC.h"
-#import "F53OSCSyncTypes.h"
+#import "ActionSyncTypes.h"
 
-@interface F53OSCSyncServer () <F53OSCPacketDestination, NSNetServiceDelegate>
+@interface ActionSyncServer () <F53OSCPacketDestination, NSNetServiceDelegate>
 {
     F53OSCServer *_oscServer;
     NSNetService *_netService;
     double _lastPongExecutionTime;
     
     NSMutableSet<NSDictionary *> *_subscribers;
-    NSMutableSet<id<F53OSCSyncServerTimeline>> *_timelines;
+    NSMutableSet<id<ActionSyncServerTimeline>> *_timelines;
 }
 
 @end
 
 #pragma mark -
 
-@implementation F53OSCSyncServer
+@implementation ActionSyncServer
 
 - (instancetype) init
 {
@@ -67,14 +67,14 @@
     _oscServer = nil;
 }
 
-- (void) registerTimeline:(id<F53OSCSyncServerTimeline>)timeline
+- (void) registerTimeline:(id<ActionSyncServerTimeline>)timeline
 {
-    // TODO: add to _timelines; observe for @"F53OSCSyncTimelineStateDidChange" notifications
+    // TODO: add to _timelines; observe for @"ActionSyncTimelineStateDidChange" notifications
 }
 
-- (void) unregisterTimeline:(id<F53OSCSyncServerTimeline>)timeline
+- (void) unregisterTimeline:(id<ActionSyncServerTimeline>)timeline
 {
-    // TODO: remove from _timelines; remove observation for @"F53OSCSyncTimelineStateDidChange" notifications
+    // TODO: remove from _timelines; remove observation for @"ActionSyncTimelineStateDidChange" notifications
 }
 
 #pragma mark - F53OSCPacketDestination
@@ -86,11 +86,11 @@
         return;
     }
     
-    if ( [message.addressPattern isEqualToString:@"/timeline/ping"] )
+    if ( [message.addressPattern isEqualToString:@"/actionsync/ping"] )
     {
         [self _sendPongToSocket:message.replySocket];
     }
-    else if ( [message.addressPattern isEqualToString:@"/timeline/subscribe"] )
+    else if ( [message.addressPattern isEqualToString:@"/actionsync/subscribe"] )
     {
         NSDictionary *subscriber = @{ @"socket": message.replySocket };
         @synchronized ( self )
@@ -98,11 +98,11 @@
             [_subscribers addObject:subscriber];
         }
     }
-    else if ( [message.addressPattern isEqualToString:@"/timeline/catchup"] )
+    else if ( [message.addressPattern isEqualToString:@"/actionsync/catchup"] )
     {
         
     }
-    else if ( [message.addressPattern isEqualToString:@"/timeline/unsubscribe"] )
+    else if ( [message.addressPattern isEqualToString:@"/actionsync/unsubscribe"] )
     {
         NSDictionary *subscriber = @{ @"socket": message.replySocket };
         @synchronized ( self )
@@ -115,9 +115,9 @@
 - (void) _sendPongToSocket:(F53OSCSocket *)socket
 {
     double now = machTimeInSeconds();
-    F53OSCSyncLocation nowAsLocation = F53OSCSyncLocationMakeWithSeconds( now );
+    ActionSyncLocation nowAsLocation = ActionSyncLocationMakeWithSeconds( now );
     F53OSCMessage *pong = [F53OSCMessage new];
-    pong.addressPattern = @"/timeline/pong";
+    pong.addressPattern = @"/actionsync/pong";
     pong.arguments = @[ @( nowAsLocation.seconds ), @( nowAsLocation.fraction ) ];
     [socket sendPacket:pong];
 }
@@ -127,10 +127,10 @@
                            nominalRate:(float)nominalRate
                         serverHostTime:(double)serverHostTimeSeconds
 {
-    F53OSCSyncLocation timelineLocation = F53OSCSyncLocationMakeWithSeconds( timelineLocationSeconds );
-    F53OSCSyncLocation serverHostTime = F53OSCSyncLocationMakeWithSeconds( serverHostTimeSeconds );
+    ActionSyncLocation timelineLocation = ActionSyncLocationMakeWithSeconds( timelineLocationSeconds );
+    ActionSyncLocation serverHostTime = ActionSyncLocationMakeWithSeconds( serverHostTimeSeconds );
     F53OSCMessage *msg = [F53OSCMessage new];
-    msg.addressPattern = [NSString stringWithFormat:@"/timeline/%@/start", timelineID];
+    msg.addressPattern = [NSString stringWithFormat:@"/actionsync/%@/start", timelineID];
     msg.arguments = @[ @( timelineLocation.seconds ), @( timelineLocation.fraction ), @( nominalRate ), @( serverHostTime.seconds ), @( serverHostTime.fraction ) ];
     // TODO: finish this
 }

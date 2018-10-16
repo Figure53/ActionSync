@@ -1,17 +1,17 @@
 //
-//  F53OSCSyncClient.m
-//  F53OSCSync
+//  ActionSyncClient.m
+//  Action Sync
 //
 //  Created by Sean Dougall on 9/9/15.
 //
 //
 
-#import "F53OSCSyncClient.h"
-#import "F53OSCSyncClientTimelineProtocol.h"
-#import "F53OSCSyncMeasurement.h"
+#import "ActionSyncClient.h"
+#import "ActionSyncClientDelegate.h"
+#import "ActionSyncMeasurement.h"
 #import "F53OSC.h"
 
-@interface F53OSCSyncClient() <F53OSCClientDelegate, F53OSCPacketDestination, NSNetServiceBrowserDelegate, NSNetServiceDelegate>
+@interface ActionSyncClient() <F53OSCClientDelegate, F53OSCPacketDestination, NSNetServiceBrowserDelegate, NSNetServiceDelegate>
 {
     F53OSCClient *_oscClient;
     NSNetServiceBrowser *_netServiceBrowser;
@@ -28,7 +28,7 @@
 
 #pragma mark -
 
-@implementation F53OSCSyncClient
+@implementation ActionSyncClient
 
 - (instancetype) init
 {
@@ -36,7 +36,6 @@
     if ( self )
     {
         _offsetMeasurements = [NSMutableArray array];
-        self.registeredTimelines = [NSMutableDictionary dictionary];
         _availableServices = [NSMutableSet set];
         _unresolvedServices = [NSMutableArray array];
     }
@@ -61,7 +60,7 @@
     if ( [_oscClient connect] )
     {
         F53OSCMessage *message = [F53OSCMessage new];
-        message.addressPattern = @"/timeline/subscribe";
+        message.addressPattern = @"/actionsync/subscribe";
         [_oscClient sendPacket:message];
         return YES;
     }
@@ -71,26 +70,10 @@
 - (void) disconnect
 {
     F53OSCMessage *message = [F53OSCMessage new];
-    message.addressPattern = @"/timeline/unsubscribe";
+    message.addressPattern = @"/actionsync/unsubscribe";
     [_oscClient sendPacket:message];
     [_oscClient disconnect];
     _oscClient = nil;
-}
-
-- (void) registerTimeline:(id<F53OSCSyncClientTimeline>)timeline
-{
-    dispatch_async( dispatch_get_main_queue(), ^{
-        NSNumber *uniqueID = @( [timeline uniqueIDForSyncClient] );
-        self.registeredTimelines[uniqueID] = timeline;
-    });
-}
-
-- (void) unregisterTimeline:(id<F53OSCSyncClientTimeline>)timeline
-{
-    dispatch_async( dispatch_get_main_queue(), ^{
-        NSNumber *uniqueID = @( [timeline uniqueIDForSyncClient] );
-        [self.registeredTimelines removeObjectForKey:uniqueID];
-    });
 }
 
 - (double) offsetFromServerClock
@@ -117,7 +100,7 @@
 {
     NSLog( @"take %@", message.addressPattern );
     double now = machTimeInSeconds();
-    if ( [message.addressPattern isEqualToString:@"/timeline/pong"] )
+    if ( [message.addressPattern isEqualToString:@"/actionsync/pong"] )
     {
         [self _handlePong:message.arguments atMachTime:now];
         return;
@@ -153,12 +136,12 @@
 - (void) _handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
 {
     double oneWayLatency = ( machTimeInSeconds - _lastPingMachTime ) * 0.5;
-    F53OSCSyncLocation serverHostLocation = F53OSCSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
+    ActionSyncLocation serverHostLocation = ActionSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
     double estimatedLocalTime = _lastPingMachTime + oneWayLatency;
-    double serverHostTime = F53OSCSyncLocationGetSeconds( serverHostLocation );
+    double serverHostTime = ActionSyncLocationGetSeconds( serverHostLocation );
     double secondsToAdd = estimatedLocalTime - serverHostTime;
     
-    F53OSCSyncMeasurement *measurement = [F53OSCSyncMeasurement new];
+    ActionSyncMeasurement *measurement = [ActionSyncMeasurement new];
     measurement.oneWayLatency = @( oneWayLatency );
     measurement.clockOffset = @( secondsToAdd );
 
@@ -176,7 +159,7 @@
     double xBar = 0.0, yBar = 0.0, xyBar = 0.0, xxBar = 0.0;
     for ( NSUInteger i = 0; i < sortedMeasurements.count * 2 / 3; i++ )
     {
-        F53OSCSyncMeasurement *measurement = sortedMeasurements[i];
+        ActionSyncMeasurement *measurement = sortedMeasurements[i];
         double x = measurement.oneWayLatency.doubleValue, y = measurement.clockOffset.doubleValue;
         xBar += x;
         yBar += y;
@@ -197,7 +180,7 @@
 // Arguments: <timeline_location:L> <nominal_rate:f> <server_host_time:L>
 - (void) _handleStartMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
 {
-    
+
 }
 
 // Arguments: none
@@ -221,7 +204,7 @@
 - (void) _sendPing
 {
     F53OSCMessage *message = [F53OSCMessage new];
-    message.addressPattern = @"/timeline/ping";
+    message.addressPattern = @"/actionsync/ping";
     _lastPingMachTime = machTimeInSeconds();
     [_oscClient sendPacket:message];
     

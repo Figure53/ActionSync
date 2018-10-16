@@ -1,6 +1,6 @@
 //
-//  F53OSCSyncMeasurement.h
-//  F53OSCSync
+//  ActionSyncMeasurement.h
+//  Action Sync
 //
 //  Created by Sean Dougall on 9/15/15.
 //
@@ -8,11 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
-@interface F53OSCSyncMeasurement : NSObject
+@interface ActionSyncMeasurement : NSObject
 
 @property (strong) NSNumber *oneWayLatency;
 @property (strong) NSNumber *clockOffset;
 
-- (NSComparisonResult) compareLatency:(F53OSCSyncMeasurement *)otherMeasurement;
+- (NSComparisonResult) compareLatency:(ActionSyncMeasurement *)otherMeasurement;
 
 @end
