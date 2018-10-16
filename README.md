@@ -33,7 +33,9 @@ The server then sends each subscribed client control messages in response to any
 
 ## A note about clocking
 
-Timecode does not have sufficient bandwidth to drive an audio clock reliably, and neither does a typical network connection. We're not going to attempt to reclock any hardware. If a client desires, it can smooth its offset calculations and use that to drive a varispeed plugin, but we're not currently attempting that in our implementation.
+In general terms, any discussion of synchronization encompasses two concepts: `clock` (which refers to the rate at which time monotonically increases at the hardware level—much like the ticking of a metronome) and `address` (which refers to an absolute location on a timeline). These two concepts are separate but complementary, and together define a complete picture of synchronization between two devices. 
+
+Timecode is a stream of addresses. It was designed to drive analog tape, and while it can be useful for clocking video frame updates, it does not have sufficient resolution to drive an audio clock reliably. For that matter, neither does a typical network connection. Thus, as a replacement for timecode, Action Sync does not attempt to reclock any hardware. If a client desires, it can smooth its offset calculations and use that to drive a varispeed plugin, but we're not currently attempting that in our implementation.
 
 In general, if we assume that there's some other clocking mechanism (e.g. AVB or word clock), then we don't need to handle clock drift correction. It can be up to the user to decide whether or not they need machines clocked together; if each cue is only a couple minutes or less, or even a bit longer if it's all video or lights, they probably don't need it. So for our purposes, we only need to worry about nominal rate.
 
