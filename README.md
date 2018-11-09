@@ -4,27 +4,33 @@ Version 0.2 (2018-10-16)
 
 ## Introduction
 
-Action Sync is an attempt to address some of the shortcomings of timecode, particularly as it is used in theatrical contexts. Timecode currently gets used for several things, some well and some badly:
+Action Sync is an attempt to address some of the shortcomings of [SMPTE timecode](https://en.wikipedia.org/wiki/SMPTE_timecode), particularly as it is used in theatrical contexts. People currently use timecode for several things:
 
-- Nominal rate
-- Clock drift correction
-- Starting and stopping
 - Periodic address checks
+- Starting and stopping
+- Nominal rate
+- Clocking / Clock drift correction
 
-Timecode, whether MTC or LTC, attempts to address all four of those concerns by implementing only the last one. Timecode is nothing more than a stream of address checks, one per frame or fraction thereof, and it is up to the receiving end to analyze that stream and extract information about rate, drift, and starting and stopping.
+Timecode, whether [MTC](https://en.wikipedia.org/wiki/MIDI_timecode) or [LTC](https://en.wikipedia.org/wiki/Linear_timecode), attempts to address all four of those concerns by implementing only the first one. Timecode is nothing more than a stream of addresses, one per frame or fraction thereof, and it is up to the receiving end to analyze that stream and extract information about rate, drift, and starting and stopping.
 
-One area where this becomes problematic is in trying to separate nominal rate from clock drift. In a timecode universe, there is no distinction between them; both are conveyed by the rate at which messages are received, and the receiving end must decide what nominal rate it expects. As a result, only two nominal rates are typically used: 1.0 (film speed) and 0.999 (video speed).
+One area where timecode falls short is separating nominal rate from clock drift. In a timecode universe, there is no distinction between them; both are conveyed by the rate at which messages are received, and the receiving end must decide what nominal rate it expects. As a result, only two nominal rates are typically used: 1.0 (film speed) and 0.999 (video speed).
 
-Starting and stopping should be simple. With timecode, though, stopping is particularly complex, because there's no explicit stop; you don't know if the sending machine actually intended to stop, or if the signal just dropped out. So there's always a "freewheel" time on the receiving end, meaning that it will always take some substantial amount of time to stop after the master stops. Additionally, this either-running-or-not binary means that scrubbing is unsupported by timecode, and so most applications turn to other standards (such as MIDI Machine Code) to support scrubbing.
+Starting and stopping should be simple. With timecode, though, stopping is complex, because there's no explicit stop; you don't know if the sending machine actually intended to stop, or if the signal just dropped out. So there's always a period of "freewheel" built in to the receiving end, meaning that it will always take some substantial amount of time for the receiver to truly stop when the sender stops sending timecode. Additionally, this either-running-or-not binary means that scrubbing is unsupported by timecode, and so most applications turn to other standards (such as MIDI Machine Code) to support scrubbing.
 
-One last shortcoming of timecode is that it only supports one timeline at any given time. Timecode streams cannot be combined, so either the timeline must stop, relocate, and start again, or multiple physical channels of timecode are needed (however, most platforms do not support this).
+One last shortcoming of timecode is that it only supports one timeline. Timecode streams cannot be combined, so either the timeline must stop, relocate, and start again, or multiple physical channels of timecode are needed (however, most platforms do not support this).
 
 
 ## Protocol structure
 
 Action Sync is built upon OSC. It is a client-server model, with one server and zero or more clients. Messages are transmitted over a TCP connection initiated by the client. Multiple independent timelines are supported, and any number can run simultaneously (subject to reason and network bandwidth, of course).
 
-The approach of Action Sync falls into two parts: (1) allow the server to share its host clock, to establish a common frame of reference that clients can use, and (2) send control messages to clients.
+For each timeline, Action Sync supports transmitting explicit information about:
+
+- Periodic address checks
+- Starting and stopping
+- Nominal rate
+
+The approach of Action Sync falls into two parts: (1) sharing the current time (i.e. the address) of the server's host clock, to establish a common frame of reference that clients can use, and (2) sending control messages to clients.
 
 A client initiates a connection with `/actionsync/subscribe` (and keeps that connection alive), followed by a series of `/actionsync/ping` messages. The server then responds to those pings with `/actionsync/pong`, which carries the server's host time. The client measures the round-trip latency, halves it to estimate the one-way latency, and uses that to calculate its own host clock's offset from the server's.
 
@@ -33,13 +39,13 @@ The server then sends each subscribed client control messages in response to any
 
 ## A note about clocking
 
-In general terms, any discussion of synchronization encompasses two concepts: `clock` (which refers to the rate at which time monotonically increases at the hardware level—much like the ticking of a metronome) and `address` (which refers to an absolute location on a timeline). These two concepts are separate but complementary, and together define a complete picture of synchronization between two devices. 
+In general terms, any discussion of synchronization encompasses two concepts: `clock` (which refers to the rate at which time monotonically increases at the hardware level—much like the ticking of a metronome) and `address` (which refers to an absolute location on a timeline). These two concepts are separate but complementary, and together define a complete picture of synchronization between two devices.
 
-Timecode is a stream of addresses. It was designed to drive analog tape, and while it can be useful for clocking video frame updates, it does not have sufficient resolution to drive an audio clock reliably. For that matter, neither does a typical network connection. Thus, as a replacement for timecode, Action Sync does not attempt to reclock any hardware. If a client desires, it can smooth its offset calculations and use that to drive a varispeed plugin, but we're not currently attempting that in our implementation.
+"Clocking" two devices together means to make one device's sense of time move forward strictly according to another device’s clock (e.g. [word clock](https://en.wikipedia.org/wiki/Word_clock)).
 
-In general, if we assume that there's some other clocking mechanism (e.g. AVB or word clock), then we don't need to handle clock drift correction. It can be up to the user to decide whether or not they need machines clocked together; if each cue is only a couple minutes or less, or even a bit longer if it's all video or lights, they probably don't need it. So for our purposes, we only need to worry about nominal rate.
+Timecode is a stream of addresses. It was designed to drive analog tape, and while it can be sufficient for clocking video frame updates, it does not have enough resolution to drive an audio clock reliably. (For that matter, neither does a typical network connection.) Thus, as a replacement for timecode, Action Sync does not attempt to clock two pieces of hardware together in a strict sense. If a client desires, it can smooth its offset calculations and use that to drive a varispeed plugin, but we're not currently attempting that in our implementation.
 
-
+We assume that if strict clocking is required, some other high-resolution clocking mechanism will be used (e.g. AVB or word clock). For many theatrical uses, such as lighting, video, or even short audio cues, strict clocking is not necessary. In these cases, events on separate machines can be effectively synchronized within the margin of clocking error that results from periodic address checks combined with an explicit nominal rate.
 
 ## Messages sent by server
 
