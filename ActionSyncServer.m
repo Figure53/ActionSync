@@ -45,7 +45,7 @@
     
     if ( self.publishedServiceName )
     {
-        _netService = [[NSNetService alloc] initWithDomain:@"local." type:@"_f53oscsync._tcp" name:self.publishedServiceName port:port];
+        _netService = [[NSNetService alloc] initWithDomain:@"local." type:@"_actionsync._tcp" name:self.publishedServiceName port:port]; // Might be more correct to use _osc._tcp
         _netService.delegate = self;
         [_netService publish];
     }

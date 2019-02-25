@@ -47,7 +47,7 @@
     _searchSuccessHandler = [success copy];
     _netServiceBrowser = [[NSNetServiceBrowser alloc] init];
     _netServiceBrowser.delegate = self;
-    [_netServiceBrowser searchForServicesOfType:@"_f53oscsync._tcp" inDomain:@"local."];
+    [_netServiceBrowser searchForServicesOfType:@"_actionsync._tcp" inDomain:@"local."]; // Might be more correct to use _osc._tcp
 }
 
 - (BOOL) connectToHost:(NSString *)host port:(UInt16)port
