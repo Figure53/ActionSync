@@ -14,12 +14,8 @@
  
  */
 
-#ifdef __OBJC__
+#import <Foundation/Foundation.h>
 
-#ifndef ActionSync_ActionSyncClientDelegate_h
-#define ActionSync_ActionSyncClientDelegate_h
-
-@import Foundation;
 #include "ActionSyncTypes.h"
 
 @protocol ActionSyncClientDelegate <NSObject>
@@ -38,6 +34,3 @@
                            toLocation:(ActionSyncLocation)location;
 
 @end
-
-#endif
-#endif
