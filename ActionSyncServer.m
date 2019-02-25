@@ -85,7 +85,7 @@
 
 - (void)takeMessage:(F53OSCMessage *)message
 {
-    if ( message.addressParts.count < 2 || ![message.addressParts.firstObject isEqualToString:@"timeline"] )
+    if ( message.addressParts.count < 2 || ![message.addressParts.firstObject isEqualToString:@"actionsync"] )
     {
         return;
     }
