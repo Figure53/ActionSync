@@ -159,7 +159,7 @@
     // A naive implementation could simply calculate the average. However, after discarding some outliers, it seems that there's a linear correlation
     // between the measured latency and the error in the offset. So we'll do a linear regression, and use the intercept to determine the offset from the host.
     // TODO: Is it worth parallelizing this code?
-    NSArray *sortedMeasurements = [_offsetMeasurements sortedArrayUsingSelector:@selector( compareLatency: )];
+    NSArray *sortedMeasurements = [_offsetMeasurements sortedArrayUsingSelector:@selector(compareLatency:)];
     double xBar = 0.0, yBar = 0.0, xyBar = 0.0, xxBar = 0.0;
     for ( NSUInteger i = 0; i < sortedMeasurements.count * 2 / 3; i++ )
     {
@@ -215,7 +215,7 @@
     // Start off by sending pings frequently, then ease up as we get more data.
     double delay = ( _offsetMeasurements.count < 10 ? 0.1 : _offsetMeasurements.count < 25 ? 0.3 : 1.0 );
     [_pingTimer invalidate];
-    _pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector( sendPing ) userInfo:nil repeats:NO];
+    _pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(sendPing) userInfo:nil repeats:NO];
 }
 
 - (BOOL)connected
