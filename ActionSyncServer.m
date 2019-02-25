@@ -97,7 +97,7 @@
     else if ( [message.addressPattern isEqualToString:@"/actionsync/subscribe"] )
     {
         NSDictionary *subscriber = @{ @"socket": message.replySocket };
-        @synchronized ( self )
+        @synchronized( self )
         {
             [_subscribers addObject:subscriber];
         }
@@ -109,7 +109,7 @@
     else if ( [message.addressPattern isEqualToString:@"/actionsync/unsubscribe"] )
     {
         NSDictionary *subscriber = @{ @"socket": message.replySocket };
-        @synchronized ( self )
+        @synchronized( self )
         {
             [_subscribers removeObject:subscriber];
         }
