@@ -92,7 +92,7 @@
     
     if ( [message.addressPattern isEqualToString:@"/actionsync/ping"] )
     {
-        [self _sendPongToSocket:message.replySocket];
+        [self sendPongToSocket:message.replySocket];
     }
     else if ( [message.addressPattern isEqualToString:@"/actionsync/subscribe"] )
     {
@@ -116,7 +116,7 @@
     }
 }
 
-- (void)_sendPongToSocket:(F53OSCSocket *)socket
+- (void)sendPongToSocket:(F53OSCSocket *)socket
 {
     double now = machTimeInSeconds();
     ActionSyncLocation nowAsLocation = ActionSyncLocationMakeWithSeconds( now );
@@ -126,10 +126,10 @@
     [socket sendPacket:pong];
 }
 
-- (void)_sendStartMessageForTimelineID:(NSString *)timelineID
-                      timelineLocation:(double)timelineLocationSeconds
-                           nominalRate:(float)nominalRate
-                        serverHostTime:(double)serverHostTimeSeconds
+- (void)sendStartMessageForTimelineID:(NSString *)timelineID
+                     timelineLocation:(double)timelineLocationSeconds
+                          nominalRate:(float)nominalRate
+                       serverHostTime:(double)serverHostTimeSeconds
 {
     ActionSyncLocation timelineLocation = ActionSyncLocationMakeWithSeconds( timelineLocationSeconds );
     ActionSyncLocation serverHostTime = ActionSyncLocationMakeWithSeconds( serverHostTimeSeconds );
@@ -139,27 +139,27 @@
     // TODO: finish this
 }
 
-- (void)_sendStopMessageForTimelineID:(NSString *)timelineID
+- (void)sendStopMessageForTimelineID:(NSString *)timelineID
+                    timelineLocation:(double)timelineLocationSeconds
+{
+    // TODO: this
+}
+
+- (void)sendScrubMessageForTimelineID:(NSString *)timelineID
                      timelineLocation:(double)timelineLocationSeconds
 {
     // TODO: this
 }
 
-- (void)_sendScrubMessageForTimelineID:(NSString *)timelineID
-                      timelineLocation:(double)timelineLocationSeconds
+- (void)sendRateMessageForTimelineID:(NSString *)timelineID
+                    timelineLocation:(double)timelineLocationSeconds
+                      newNominalRate:(float)nominalRate
 {
     // TODO: this
 }
 
-- (void)_sendRateMessageForTimelineID:(NSString *)timelineID
-                     timelineLocation:(double)timelineLocationSeconds
-                       newNominalRate:(float)nominalRate
-{
-    // TODO: this
-}
-
-- (void)_sendLoadMessageForTimelineID:(NSString *)timelineID
-                     timelineLocation:(float)timelineLocationSeconds
+- (void)sendLoadMessageForTimelineID:(NSString *)timelineID
+                    timelineLocation:(float)timelineLocationSeconds
 {
     // TODO: this
 }

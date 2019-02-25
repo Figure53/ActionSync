@@ -89,7 +89,7 @@
 
 - (void)clientDidConnect:(F53OSCClient *)client
 {
-    [self _sendPing];
+    [self sendPing];
 }
 
 - (void)clientDidDisconnect:(F53OSCClient *)client
@@ -106,7 +106,7 @@
     double now = machTimeInSeconds();
     if ( [message.addressPattern isEqualToString:@"/actionsync/pong"] )
     {
-        [self _handlePong:message.arguments atMachTime:now];
+        [self handlePong:message.arguments atMachTime:now];
         return;
     }
     
@@ -117,19 +117,19 @@
         
         if ( [action isEqualToString:@"start"] )
         {
-            [self _handleStartMessage:message.arguments forTimelineID:timelineID];
+            [self handleStartMessage:message.arguments forTimelineID:timelineID];
         }
         else if ( [action isEqualToString:@"stop"] )
         {
-            [self _handleStopMessage:message.arguments forTimelineID:timelineID];
+            [self handleStopMessage:message.arguments forTimelineID:timelineID];
         }
         else if ( [action isEqualToString:@"scrub"] )
         {
-            [self _handleScrubMessage:message.arguments forTimelineID:timelineID];
+            [self handleScrubMessage:message.arguments forTimelineID:timelineID];
         }
         else if ( [action isEqualToString:@"rate"] )
         {
-            [self _handleRateChangeMessage:message.arguments forTimelineID:timelineID];
+            [self handleRateChangeMessage:message.arguments forTimelineID:timelineID];
         }
     }
 }
@@ -137,7 +137,7 @@
 #pragma mark - Message handling
 
 // Arguments: <server_host_time:L>
-- (void)_handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
+- (void)handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
 {
     double oneWayLatency = ( machTimeInSeconds - _lastPingMachTime ) * 0.5;
     ActionSyncLocation serverHostLocation = ActionSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
@@ -182,30 +182,30 @@
 }
 
 // Arguments: <timeline_location:L> <nominal_rate:f> <server_host_time:L>
-- (void)_handleStartMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
+- (void)handleStartMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
 {
 
 }
 
 // Arguments: none
-- (void)_handleStopMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
+- (void)handleStopMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
 {
     
 }
 
 // Arguments: <timeline_location:L>
-- (void)_handleScrubMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
+- (void)handleScrubMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
 {
     
 }
 
 // Arguments: <timeline_location:L> <new_rate:f>
-- (void)_handleRateChangeMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
+- (void)handleRateChangeMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
 {
     
 }
 
-- (void)_sendPing
+- (void)sendPing
 {
     F53OSCMessage *message = [F53OSCMessage new];
     message.addressPattern = @"/actionsync/ping";
@@ -215,7 +215,7 @@
     // Start off by sending pings frequently, then ease up as we get more data.
     double delay = ( _offsetMeasurements.count < 10 ? 0.1 : _offsetMeasurements.count < 25 ? 0.3 : 1.0 );
     [_pingTimer invalidate];
-    _pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector( _sendPing ) userInfo:nil repeats:NO];
+    _pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector( sendPing ) userInfo:nil repeats:NO];
 }
 
 - (BOOL)connected
