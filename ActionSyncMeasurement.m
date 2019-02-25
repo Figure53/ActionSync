@@ -14,7 +14,7 @@
 
 @implementation ActionSyncMeasurement
 
-- (NSComparisonResult) compareLatency:(ActionSyncMeasurement *)otherMeasurement
+- (NSComparisonResult)compareLatency:(ActionSyncMeasurement *)otherMeasurement
 {
     if ( self.oneWayLatency.doubleValue < otherMeasurement.oneWayLatency.doubleValue )
         return NSOrderedAscending;
@@ -22,7 +22,7 @@
     return NSOrderedDescending;
 }
 
-- (NSString *) description
+- (NSString *)description
 {
     return [NSString stringWithFormat:@"<Sync Measurement; %@ one-way latency; %@ clock offset", self.oneWayLatency, self.clockOffset];
 }

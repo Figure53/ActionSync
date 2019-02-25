@@ -30,7 +30,7 @@
 
 @implementation ActionSyncServer
 
-- (instancetype) init
+- (instancetype)init
 {
     self = [super init];
     if ( self )
@@ -40,7 +40,7 @@
     return self;
 }
 
-- (BOOL) startListeningOnPort:(uint16_t)port withPublishedServiceName:(NSString *)publishedServiceName
+- (BOOL)startListeningOnPort:(uint16_t)port withPublishedServiceName:(NSString *)publishedServiceName
 {
     [self stopListening];
     
@@ -59,31 +59,31 @@
     return [_oscServer startListening];
 }
 
-- (BOOL) startListeningOnPort:(uint16_t)port
+- (BOOL)startListeningOnPort:(uint16_t)port
 {
     return [self startListeningOnPort:port withPublishedServiceName:nil];
 }
 
-- (void) stopListening
+- (void)stopListening
 {
     _netService = nil;
     [_oscServer stopListening];
     _oscServer = nil;
 }
 
-- (void) registerTimeline:(id<ActionSyncServerTimeline>)timeline
+- (void)registerTimeline:(id<ActionSyncServerTimeline>)timeline
 {
     // TODO: add to _timelines; observe for @"ActionSyncTimelineStateDidChange" notifications
 }
 
-- (void) unregisterTimeline:(id<ActionSyncServerTimeline>)timeline
+- (void)unregisterTimeline:(id<ActionSyncServerTimeline>)timeline
 {
     // TODO: remove from _timelines; remove observation for @"ActionSyncTimelineStateDidChange" notifications
 }
 
 #pragma mark - F53OSCPacketDestination
 
-- (void) takeMessage:(F53OSCMessage *)message
+- (void)takeMessage:(F53OSCMessage *)message
 {
     if ( message.addressParts.count < 2 || ![message.addressParts.firstObject isEqualToString:@"timeline"] )
     {
@@ -116,7 +116,7 @@
     }
 }
 
-- (void) _sendPongToSocket:(F53OSCSocket *)socket
+- (void)_sendPongToSocket:(F53OSCSocket *)socket
 {
     double now = machTimeInSeconds();
     ActionSyncLocation nowAsLocation = ActionSyncLocationMakeWithSeconds( now );
@@ -126,7 +126,7 @@
     [socket sendPacket:pong];
 }
 
-- (void) _sendStartMessageForTimelineID:(NSString *)timelineID
+- (void)_sendStartMessageForTimelineID:(NSString *)timelineID
                       timelineLocation:(double)timelineLocationSeconds
                            nominalRate:(float)nominalRate
                         serverHostTime:(double)serverHostTimeSeconds
@@ -139,26 +139,26 @@
     // TODO: finish this
 }
 
-- (void) _sendStopMessageForTimelineID:(NSString *)timelineID
+- (void)_sendStopMessageForTimelineID:(NSString *)timelineID
                      timelineLocation:(double)timelineLocationSeconds
 {
     // TODO: this
 }
 
-- (void) _sendScrubMessageForTimelineID:(NSString *)timelineID
+- (void)_sendScrubMessageForTimelineID:(NSString *)timelineID
                       timelineLocation:(double)timelineLocationSeconds
 {
     // TODO: this
 }
 
-- (void) _sendRateMessageForTimelineID:(NSString *)timelineID
+- (void)_sendRateMessageForTimelineID:(NSString *)timelineID
                      timelineLocation:(double)timelineLocationSeconds
                        newNominalRate:(float)nominalRate
 {
     // TODO: this
 }
 
-- (void) _sendLoadMessageForTimelineID:(NSString *)timelineID
+- (void)_sendLoadMessageForTimelineID:(NSString *)timelineID
                      timelineLocation:(float)timelineLocationSeconds
 {
     // TODO: this
@@ -166,12 +166,12 @@
 
 #pragma mark - NSNetServiceDelegate
 
-- (void) netService:(NSNetService *)sender didNotPublish:(NSDictionary *)errorDict
+- (void)netService:(NSNetService *)sender didNotPublish:(NSDictionary *)errorDict
 {
     NSLog( @"Did not publish: %@", errorDict );
 }
 
-- (void) netServiceDidPublish:(NSNetService *)sender
+- (void)netServiceDidPublish:(NSNetService *)sender
 {
 }
 

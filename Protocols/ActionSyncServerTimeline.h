@@ -22,12 +22,12 @@
 
 @protocol ActionSyncServerTimeline <NSObject>
 
-- (NSString *) timelineIDForSyncServer:(ActionSyncServer *)sender;
+- (NSString *)timelineIDForSyncServer:(ActionSyncServer *)sender;
 
 // Timing methods. These are built on the assumption that a single anchor time exists, around which timing calculations can be made based on a constant nominal playback rate.
-- (double) anchorHostTimeForSyncServer:(ActionSyncServer *)sender;
-- (double) anchorTimelineLocationForSyncServer:(ActionSyncServer *)sender;
-- (float) nominalRateForSyncServer:(ActionSyncServer *)sender;
+- (double)anchorHostTimeForSyncServer:(ActionSyncServer *)sender;
+- (double)anchorTimelineLocationForSyncServer:(ActionSyncServer *)sender;
+- (float)nominalRateForSyncServer:(ActionSyncServer *)sender;
 
 @end
 

@@ -16,9 +16,9 @@
 @property (readonly) double offsetFromServerClock;
 @property (readonly) BOOL connected;
 
-- (void) searchForServers:(void (^)(NSSet *))success; ///< Passes a set of dictionaries, with @"name", @"host", and @"port" keys.
+- (void)searchForServers:(void (^)(NSSet *))success; ///< Passes a set of dictionaries, with @"name", @"host", and @"port" keys.
 
-- (BOOL) connectToHost:(NSString *)host port:(UInt16)port;
-- (void) disconnect;
+- (BOOL)connectToHost:(NSString *)host port:(UInt16)port;
+- (void)disconnect;
 
 @end

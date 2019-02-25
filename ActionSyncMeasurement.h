@@ -13,6 +13,6 @@
 @property (strong) NSNumber *oneWayLatency;
 @property (strong) NSNumber *clockOffset;
 
-- (NSComparisonResult) compareLatency:(ActionSyncMeasurement *)otherMeasurement;
+- (NSComparisonResult)compareLatency:(ActionSyncMeasurement *)otherMeasurement;
 
 @end

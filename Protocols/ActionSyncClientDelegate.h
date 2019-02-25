@@ -22,15 +22,15 @@
 
 @optional
 
-- (void) syncClientDidStartTimelineID:(NSString *)timelineID
+- (void)syncClientDidStartTimelineID:(NSString *)timelineID
                            atLocation:(ActionSyncLocation)location
                              withRate:(float)rate
                            atHostTime:(double)hostTimeInSeconds;
-- (void) syncClientDidStopTimelineID:(NSString *)timelineID;
-- (void) syncClientDidChangeRateForTimelineID:(NSString *)timelineID
+- (void)syncClientDidStopTimelineID:(NSString *)timelineID;
+- (void)syncClientDidChangeRateForTimelineID:(NSString *)timelineID
                                    atLocation:(ActionSyncLocation)location
                                   withNewRate:(float)rate;
-- (void) syncClientDidScrubTimelineID:(NSString *)timelineID
+- (void)syncClientDidScrubTimelineID:(NSString *)timelineID
                            toLocation:(ActionSyncLocation)location;
 
 @end
