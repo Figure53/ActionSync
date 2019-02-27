@@ -41,20 +41,29 @@
 - (BOOL)startListeningOnPort:(uint16_t)port withPublishedServiceName:(NSString *)publishedServiceName
 {
     [self stopListening];
-    
-    if ( publishedServiceName )
-        self.publishedServiceName = publishedServiceName;
-    
-    if ( self.publishedServiceName )
-    {
-        self.netService = [[NSNetService alloc] initWithDomain:@"local." type:@"_actionsync._tcp" name:self.publishedServiceName port:port]; // Might be more correct to use _osc._tcp
-        self.netService.delegate = self;
-        [self.netService publish];
-    }
+
     self.oscServer = [F53OSCServer new];
     self.oscServer.port = port;
     self.oscServer.delegate = self;
-    return [self.oscServer startListening];
+    
+    if ( [self.oscServer startListening] )
+    {
+        if ( publishedServiceName )
+            self.publishedServiceName = publishedServiceName;
+
+        if ( self.publishedServiceName )
+        {
+            self.netService = [[NSNetService alloc] initWithDomain:@"local." type:@"_actionsync._tcp" name:self.publishedServiceName port:port]; // Might be more correct to use _osc._tcp
+            self.netService.delegate = self;
+            [self.netService publish];
+        }
+
+        return YES;
+    }
+    else
+    {
+        return NO;
+    }
 }
 
 - (BOOL)startListeningOnPort:(uint16_t)port
@@ -64,7 +73,9 @@
 
 - (void)stopListening
 {
+    [self.netService stop];
     self.netService = nil;
+
     [self.oscServer stopListening];
     self.oscServer = nil;
 }
@@ -166,7 +177,7 @@
 
 - (void)netService:(NSNetService *)sender didNotPublish:(NSDictionary *)errorDict
 {
-    NSLog( @"Did not publish: %@", errorDict );
+    NSLog( @"Did not publish ActionSync service '%@': %@", sender.name, errorDict );
 }
 
 - (void)netServiceDidPublish:(NSNetService *)sender
