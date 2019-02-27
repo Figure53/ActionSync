@@ -16,17 +16,17 @@
 #import "F53OSC.h"
 
 @interface ActionSyncClient() <F53OSCClientDelegate, F53OSCPacketDestination, NSNetServiceBrowserDelegate, NSNetServiceDelegate>
-{
-    F53OSCClient *_oscClient;
-    NSNetServiceBrowser *_netServiceBrowser;
-    NSMutableArray *_unresolvedServices;    ///< NSNetServices
-    NSMutableSet *_availableServices;     ///< Dictionaries
-    void (^_searchSuccessHandler)(NSSet *);
-    double _lastPingMachTime;
-    NSMutableArray *_offsetMeasurements;
-    double _averageOffset;
-    NSTimer *_pingTimer;
-}
+
+@property (strong) F53OSCClient *oscClient;
+@property (strong) NSNetServiceBrowser *netServiceBrowser;
+@property (strong) NSMutableArray *unresolvedServices;    ///< NSNetServices
+@property (strong) NSMutableSet *availableServices;       ///< Dictionaries
+@property (strong) void (^searchSuccessHandler)(NSSet *); ///< See http://goshdarnblocksyntax.com/ for a reminder on block syntax.
+
+@property (strong) NSTimer *pingTimer;
+@property (assign) double lastPingMachTime;
+@property (strong) NSMutableArray *offsetMeasurements;
+@property (assign) double averageOffset;
 
 @end
 
@@ -39,33 +39,44 @@
     self = [super init];
     if ( self )
     {
-        _offsetMeasurements = [NSMutableArray array];
-        _availableServices = [NSMutableSet set];
-        _unresolvedServices = [NSMutableArray array];
+        self.delegate = nil;
+
+        self.oscClient = nil;
+        self.netServiceBrowser = nil;
+        self.availableServices = [NSMutableSet set];
+        self.unresolvedServices = [NSMutableArray array];
+
+        self.pingTimer = nil;
+        self.lastPingMachTime = 0;
+        self.offsetMeasurements = [NSMutableArray array];
+        self.averageOffset = 0;
     }
     return self;
 }
 
-- (void)searchForServers:(void (^)(NSSet *))success
+- (void)searchForServers:(void (^)(NSSet *))successHandler
 {
-    _searchSuccessHandler = [success copy];
-    _netServiceBrowser = [[NSNetServiceBrowser alloc] init];
-    _netServiceBrowser.delegate = self;
-    [_netServiceBrowser searchForServicesOfType:@"_actionsync._tcp" inDomain:@"local."]; // Might be more correct to use _osc._tcp
+    self.searchSuccessHandler = [successHandler copy];
+
+    self.netServiceBrowser = [[NSNetServiceBrowser alloc] init];
+    self.netServiceBrowser.delegate = self;
+    [self.netServiceBrowser searchForServicesOfType:@"_actionsync._tcp" inDomain:@"local."]; // Might be more correct to use _osc._tcp
 }
 
 - (BOOL)connectToHost:(NSString *)host port:(UInt16)port
 {
-    _oscClient = [F53OSCClient new];
-    _oscClient.host = host;
-    _oscClient.port = port;
-    _oscClient.useTcp = YES;
-    _oscClient.delegate = self;
-    if ( [_oscClient connect] )
+    self.oscClient = [F53OSCClient new];
+    self.oscClient.host = host;
+    self.oscClient.port = port;
+    self.oscClient.useTcp = YES;
+    self.oscClient.delegate = self;
+
+    if ( [self.oscClient connect] )
     {
         F53OSCMessage *message = [F53OSCMessage new];
         message.addressPattern = @"/actionsync/subscribe";
-        [_oscClient sendPacket:message];
+
+        [self.oscClient sendPacket:message];
         return YES;
     }
     return NO;
@@ -75,14 +86,20 @@
 {
     F53OSCMessage *message = [F53OSCMessage new];
     message.addressPattern = @"/actionsync/unsubscribe";
-    [_oscClient sendPacket:message];
-    [_oscClient disconnect];
-    _oscClient = nil;
+
+    [self.oscClient sendPacket:message];
+    [self.oscClient disconnect];
+    self.oscClient = nil;
+}
+
+- (BOOL)connected
+{
+    return ( self.offsetMeasurements.count > 10 );
 }
 
 - (double)offsetFromServerClock
 {
-    return _averageOffset;
+    return self.averageOffset;
 }
 
 #pragma mark - F53OSCClientDelegate
@@ -94,8 +111,8 @@
 
 - (void)clientDidDisconnect:(F53OSCClient *)client
 {
-    [_pingTimer invalidate];
-    _pingTimer = nil;
+    [self.pingTimer invalidate];
+    self.pingTimer = nil;
 }
 
 #pragma mark - F53OSCPacketDestination
@@ -103,6 +120,7 @@
 - (void)takeMessage:(F53OSCMessage *)message
 {
     NSLog( @"take %@", message.addressPattern );
+
     double now = machTimeInSeconds();
     if ( [message.addressPattern isEqualToString:@"/actionsync/pong"] )
     {
@@ -139,9 +157,9 @@
 // Arguments: <server_host_time:L>
 - (void)handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
 {
-    double oneWayLatency = ( machTimeInSeconds - _lastPingMachTime ) * 0.5;
+    double oneWayLatency = ( machTimeInSeconds - self.lastPingMachTime ) * 0.5;
     ActionSyncLocation serverHostLocation = ActionSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
-    double estimatedLocalTime = _lastPingMachTime + oneWayLatency;
+    double estimatedLocalTime = self.lastPingMachTime + oneWayLatency;
     double serverHostTime = ActionSyncLocationGetSeconds( serverHostLocation );
     double secondsToAdd = estimatedLocalTime - serverHostTime;
     
@@ -150,16 +168,16 @@
     measurement.clockOffset = @( secondsToAdd );
 
     // Clear out old measurements and append this new one.
-    while ( _offsetMeasurements.count >= 200 )
+    while ( self.offsetMeasurements.count >= 200 )
     {
-        [_offsetMeasurements removeObjectAtIndex:0];
+        [self.offsetMeasurements removeObjectAtIndex:0];
     }
-    [_offsetMeasurements addObject:measurement];
+    [self.offsetMeasurements addObject:measurement];
     
     // A naive implementation could simply calculate the average. However, after discarding some outliers, it seems that there's a linear correlation
     // between the measured latency and the error in the offset. So we'll do a linear regression, and use the intercept to determine the offset from the host.
     // TODO: Is it worth parallelizing this code?
-    NSArray *sortedMeasurements = [_offsetMeasurements sortedArrayUsingSelector:@selector(compareLatency:)];
+    NSArray *sortedMeasurements = [self.offsetMeasurements sortedArrayUsingSelector:@selector(compareLatency:)];
     double xBar = 0.0, yBar = 0.0, xyBar = 0.0, xxBar = 0.0;
     for ( NSUInteger i = 0; i < sortedMeasurements.count * 2 / 3; i++ )
     {
@@ -176,9 +194,9 @@
     xxBar /= count;
     xyBar /= count;
     double slope = ( xyBar - xBar * yBar ) / ( xxBar - xBar * xBar );
-    _averageOffset = yBar - slope * xBar;
+    self.averageOffset = yBar - slope * xBar;
 
-    NSLog( @"%@, %0.06f", measurement, _averageOffset );
+    NSLog( @"%@, %0.06f", measurement, self.averageOffset );
 }
 
 // Arguments: <timeline_location:L> <nominal_rate:f> <server_host_time:L>
@@ -209,61 +227,57 @@
 {
     F53OSCMessage *message = [F53OSCMessage new];
     message.addressPattern = @"/actionsync/ping";
-    _lastPingMachTime = machTimeInSeconds();
-    [_oscClient sendPacket:message];
+    self.lastPingMachTime = machTimeInSeconds();
+    [self.oscClient sendPacket:message];
     
     // Start off by sending pings frequently, then ease up as we get more data.
-    double delay = ( _offsetMeasurements.count < 10 ? 0.1 : _offsetMeasurements.count < 25 ? 0.3 : 1.0 );
-    [_pingTimer invalidate];
-    _pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(sendPing) userInfo:nil repeats:NO];
-}
-
-- (BOOL)connected
-{
-    return ( _offsetMeasurements.count > 10 );
+    double delay = ( self.offsetMeasurements.count < 10 ? 0.1 : self.offsetMeasurements.count < 25 ? 0.3 : 1.0 );
+    [self.pingTimer invalidate];
+    self.pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(sendPing) userInfo:nil repeats:NO];
 }
 
 #pragma mark - NSNetServiceBrowserDelegate
 
 - (void)netServiceBrowser:(NSNetServiceBrowser *)aNetServiceBrowser didFindService:(NSNetService *)netService moreComing:(BOOL)moreComing
 {
-    [_unresolvedServices addObject:netService];
+    [self.unresolvedServices addObject:netService];
     netService.delegate = self;
     [netService resolveWithTimeout:5.0];
 }
 
-- (void)netServiceBrowser:(NSNetServiceBrowser *)aNetServiceBrowser didNotSearch:(NSDictionary *)errorDict
-{
-    NSLog( @"Did not search: %@", errorDict );
-}
-
 - (void)netServiceBrowserWillSearch:(NSNetServiceBrowser *)aNetServiceBrowser
 {
-    [_availableServices removeAllObjects];
+    [self.availableServices removeAllObjects];
+}
+
+- (void)netServiceBrowser:(NSNetServiceBrowser *)aNetServiceBrowser didNotSearch:(NSDictionary *)errorDict
+{
+    NSLog( @"Did not search for ActionSync service. Error: %@", errorDict );
 }
 
 #pragma mark - NSNetServiceDelegate
 
 - (void)netService:(NSNetService *)sender didNotResolve:(NSDictionary *)errorDict
 {
-    NSLog( @"Did not resolve: %@", errorDict );
-    [_unresolvedServices removeObject:sender];
-    [self _notifyIfAllResolved];
+    NSLog( @"Did not resolve ActionSync service. Error: %@", errorDict );
+
+    [self.unresolvedServices removeObject:sender];
+    [self notifyIfAllResolved];
 }
 
 - (void)netServiceDidResolveAddress:(NSNetService *)sender
 {
-    NSDictionary *info = @{ @"host": sender.hostName, @"port": @( sender.port ), @"name": sender.name };
-    [_availableServices addObject:info];
-    [_unresolvedServices removeObject:sender];
-    [self _notifyIfAllResolved];
+    NSDictionary *info = @{ @"host": sender.hostName, @"port": @(sender.port), @"name": sender.name };
+    [self.availableServices addObject:info];
+    [self.unresolvedServices removeObject:sender];
+    [self notifyIfAllResolved];
 }
 
-- (void)_notifyIfAllResolved
+- (void)notifyIfAllResolved
 {
-    if ( _unresolvedServices.count == 0 && _searchSuccessHandler )
+    if ( self.unresolvedServices.count == 0 && self.searchSuccessHandler )
     {
-        _searchSuccessHandler( [_availableServices copy] );
+        self.searchSuccessHandler( [self.availableServices copy] );
     }
 }
 

@@ -13,10 +13,10 @@
 @interface ActionSyncClient : NSObject
 
 @property (weak) id<ActionSyncClientDelegate> delegate;
-@property (readonly) double offsetFromServerClock;
 @property (readonly) BOOL connected;
+@property (readonly) double offsetFromServerClock;
 
-- (void)searchForServers:(void (^)(NSSet *))success; ///< Passes a set of dictionaries, with @"name", @"host", and @"port" keys.
+- (void)searchForServers:(void (^)(NSSet *))successHandler; ///< successHandler will be called with a set of dictionaries containing @"name", @"host", and @"port" keys.
 
 - (BOOL)connectToHost:(NSString *)host port:(UInt16)port;
 - (void)disconnect;
