@@ -15,14 +15,12 @@
 #import "ActionSyncTypes.h"
 
 @interface ActionSyncServer () <F53OSCPacketDestination, NSNetServiceDelegate>
-{
-    F53OSCServer *_oscServer;
-    NSNetService *_netService;
-    double _lastPongExecutionTime;
-    
-    NSMutableSet<NSDictionary *> *_subscribers;
-    NSMutableSet<id<ActionSyncServerTimeline>> *_timelines;
-}
+
+@property (strong) F53OSCServer *oscServer;
+@property (strong) NSNetService *netService;
+
+@property (strong) NSMutableSet<id<ActionSyncServerTimeline>> *timelines;
+@property (strong) NSMutableSet<NSDictionary *> *subscribers;
 
 @end
 
@@ -35,7 +33,7 @@
     self = [super init];
     if ( self )
     {
-        _subscribers = [NSMutableSet set];
+        self.subscribers = [NSMutableSet set];
     }
     return self;
 }
@@ -49,14 +47,14 @@
     
     if ( self.publishedServiceName )
     {
-        _netService = [[NSNetService alloc] initWithDomain:@"local." type:@"_actionsync._tcp" name:self.publishedServiceName port:port]; // Might be more correct to use _osc._tcp
-        _netService.delegate = self;
-        [_netService publish];
+        self.netService = [[NSNetService alloc] initWithDomain:@"local." type:@"_actionsync._tcp" name:self.publishedServiceName port:port]; // Might be more correct to use _osc._tcp
+        self.netService.delegate = self;
+        [self.netService publish];
     }
-    _oscServer = [F53OSCServer new];
-    _oscServer.port = port;
-    _oscServer.delegate = self;
-    return [_oscServer startListening];
+    self.oscServer = [F53OSCServer new];
+    self.oscServer.port = port;
+    self.oscServer.delegate = self;
+    return [self.oscServer startListening];
 }
 
 - (BOOL)startListeningOnPort:(uint16_t)port
@@ -66,19 +64,19 @@
 
 - (void)stopListening
 {
-    _netService = nil;
-    [_oscServer stopListening];
-    _oscServer = nil;
+    self.netService = nil;
+    [self.oscServer stopListening];
+    self.oscServer = nil;
 }
 
 - (void)registerTimeline:(id<ActionSyncServerTimeline>)timeline
 {
-    // TODO: add to _timelines; observe for @"ActionSyncTimelineStateDidChange" notifications
+    // TODO: add to self.timelines; observe for @"ActionSyncTimelineStateDidChange" notifications
 }
 
 - (void)unregisterTimeline:(id<ActionSyncServerTimeline>)timeline
 {
-    // TODO: remove from _timelines; remove observation for @"ActionSyncTimelineStateDidChange" notifications
+    // TODO: remove from self.timelines; remove observation for @"ActionSyncTimelineStateDidChange" notifications
 }
 
 #pragma mark - F53OSCPacketDestination
@@ -99,7 +97,7 @@
         NSDictionary *subscriber = @{ @"socket": message.replySocket };
         @synchronized( self )
         {
-            [_subscribers addObject:subscriber];
+            [self.subscribers addObject:subscriber];
         }
     }
     else if ( [message.addressPattern isEqualToString:@"/actionsync/catchup"] )
@@ -111,7 +109,7 @@
         NSDictionary *subscriber = @{ @"socket": message.replySocket };
         @synchronized( self )
         {
-            [_subscribers removeObject:subscriber];
+            [self.subscribers removeObject:subscriber];
         }
     }
 }
