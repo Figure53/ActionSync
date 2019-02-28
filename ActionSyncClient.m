@@ -212,8 +212,32 @@
     float rate = [arguments[1] floatValue];
     ActionSyncLocation location = ActionSyncLocationMake( [arguments[2] intValue], [arguments[3] intValue] );
     ActionSyncLocation hostTime = ActionSyncLocationMake( [arguments[4] intValue], [arguments[5] intValue] );
+    double locationInSeconds = ActionSyncLocationGetSeconds(location);
+    double hostTimeInSeconds = ActionSyncLocationGetSeconds(hostTime);
 
-    NSLog( @"timeline %@ status: %@ @ %@ - %@ / %@", timelineID, @(state), @(rate), @(ActionSyncLocationGetSeconds(location)), @(ActionSyncLocationGetSeconds(hostTime)) );
+    NSLog( @"timeline %@ status: %@ @ %@ - %@ / %@", timelineID, @(state), @(rate), @(locationInSeconds), @(hostTimeInSeconds) );
+
+    if ( state == ActionSyncStateRunning && self.delegate && [self.delegate respondsToSelector:@selector(syncClientStartTimelineID:withRate:atLocation:atHostTime:)] )
+    {
+        [self.delegate syncClientStartTimelineID:timelineID
+                                        withRate:rate
+                                      atLocation:locationInSeconds
+                                      atHostTime:hostTimeInSeconds];
+    }
+
+    if ( state == ActionSyncStatePaused && self.delegate && [self.delegate respondsToSelector:@selector(syncClientPauseTimelineID:atLocation:atHostTime:)] )
+    {
+        [self.delegate syncClientPauseTimelineID:timelineID
+                                      atLocation:locationInSeconds
+                                      atHostTime:hostTimeInSeconds];
+    }
+
+    if ( state == ActionSyncStateStopped && self.delegate && [self.delegate respondsToSelector:@selector(syncClientStopTimelineID:atLocation:atHostTime:)] )
+    {
+        [self.delegate syncClientStopTimelineID:timelineID
+                                     atLocation:locationInSeconds
+                                     atHostTime:hostTimeInSeconds];
+    }
 }
 
 #pragma mark - NSNetServiceBrowserDelegate
