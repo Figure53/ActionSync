@@ -87,7 +87,7 @@ Sent in response to `/actionsync/ping`.
 
 ### `/actionsync/<id>/status`
 
-Arguments: `state` (int), `nominal rate` (float), `timeline location` ([time](#time-def)), `server host time` ([time](#time-def))
+Arguments: `state` (int), `nominal_rate` (float), `timeline_location` ([time](#time-def)), `server_host_time` ([time](#time-def))
 
 Sent when the status of a timeline changes, or in response to `/actionsync/catchup`. 
 
@@ -96,9 +96,9 @@ All arguments are required:
  | argument | description  |
  | -------- | ------------ |
  | `state`  | 0 = stopped, 1 = paused, 2 = running |
- | `nominal rate` | The nominal playback rate of the timeline at the given timeline location. Nominal rate is only meaningful when the `state` is "running" (2). If the state is not currently running this argument may be ignored. |
- | `timeline location` | The location on the timeline where the state change did happen or will happen in the future. All timelines start at location zero (0). |
- | `server host time` | The host time, in seconds, when the state change did happen or will happen in the future. The client may use its knowledge of the offset between the server host time and the client host time to schedule the state change on the client. |
+ | `nominal_rate` | The nominal playback rate of the timeline at the given timeline location. Nominal rate is only meaningful when the `state` is "running" (2). If the state is not currently running this argument may be ignored. |
+ | `timeline_location` | The location on the timeline where the state change did happen or will happen in the future. All timelines start at location zero (0). |
+ | `server_host_time` | The host time, in seconds, when the state change did happen or will happen in the future. The client may use its knowledge of the offset between the server host time and the client host time to schedule the state change on the client. |
 
 
 
