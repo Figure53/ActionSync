@@ -56,12 +56,12 @@ double machTimeToSeconds(uint64_t mach_time)
     return (double)nanos / 1000000000.;
 }
 
-inline ActionSyncStatus ActionSyncStatusMake(int32_t state, double location, double hostTime, float rate)
+inline ActionSyncStatus ActionSyncStatusMake(int32_t state, float rate, double location, double hostTime)
 {
     return (ActionSyncStatus){
         .state = state,
+        .rate = rate,
         .location = ActionSyncLocationMakeWithSeconds(location),
-        .hostTime = ActionSyncLocationMakeWithSeconds(hostTime),
-        .rate = rate
+        .hostTime = ActionSyncLocationMakeWithSeconds(hostTime)
     };
 }

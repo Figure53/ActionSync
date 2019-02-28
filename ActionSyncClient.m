@@ -157,6 +157,9 @@
 // Arguments: <server_host_time:L>
 - (void)handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
 {
+    if ( arguments.count != 2 )
+        return;
+
     double oneWayLatency = ( machTimeInSeconds - self.lastPingMachTime ) * 0.5;
     ActionSyncLocation serverHostLocation = ActionSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
     double estimatedLocalTime = self.lastPingMachTime + oneWayLatency;
@@ -202,7 +205,15 @@
 // Arguments: <state:i> <timeline_location:L> <server_host_time:L> <nominal_rate:f>
 - (void)handleStatusMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
 {
+    if ( arguments.count != 6 )
+        return;
 
+    int state = [arguments[0] integerValue];
+    float rate = [arguments[1] floatValue];
+    ActionSyncLocation location = ActionSyncLocationMake( [arguments[2] intValue], [arguments[3] intValue] );
+    ActionSyncLocation hostTime = ActionSyncLocationMake( [arguments[4] intValue], [arguments[5] intValue] );
+
+    NSLog( @"timeline %@ status: %@ @ %@ - %@ / %@", timelineID, @(state), @(rate), @(ActionSyncLocationGetSeconds(location)), @(ActionSyncLocationGetSeconds(hostTime)) );
 }
 
 #pragma mark - NSNetServiceBrowserDelegate

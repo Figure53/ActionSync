@@ -24,9 +24,9 @@ enum ActionSyncState { ActionSyncStateStopped = 0, ActionSyncStatePaused = 1, Ac
 
 typedef struct {
     int32_t state;
+    float rate;
     ActionSyncLocation location;
     ActionSyncLocation hostTime;
-    float rate;
 } ActionSyncStatus;
 
-ActionSyncStatus ActionSyncStatusMake(int32_t state, double location, double hostTime, float rate);
+ActionSyncStatus ActionSyncStatusMake(int32_t state, float rate, double location, double hostTime);

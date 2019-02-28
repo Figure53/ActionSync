@@ -93,7 +93,7 @@
 {
     NSString *timelineID = [timeline timelineIDForSyncServer:self];
 
-    NSLog( @"/actionsync/%@/status %@ %@ %@ %@", timelineID, @(status.state), @(ActionSyncLocationGetSeconds(status.location)), @(ActionSyncLocationGetSeconds(status.hostTime)), @(status.rate) );
+    NSLog( @"/actionsync/%@/status %@ %@ %@ %@", timelineID, @(status.state), @(status.rate), @(ActionSyncLocationGetSeconds(status.location)), @(ActionSyncLocationGetSeconds(status.hostTime)) );
 
     for ( NSDictionary *subscriber in self.subscribers )
     {
@@ -164,7 +164,7 @@
 
     F53OSCMessage *msg = [F53OSCMessage new];
     msg.addressPattern = [NSString stringWithFormat:@"/actionsync/%@/status", timelineID];
-    msg.arguments = @[ @(status.state), @(status.location.seconds), @(status.location.fraction), @(status.hostTime.seconds), @(status.hostTime.fraction), @(status.rate) ];
+    msg.arguments = @[ @(status.state), @(status.rate), @(status.location.seconds), @(status.location.fraction), @(status.hostTime.seconds), @(status.hostTime.fraction) ];
 
     [socket sendPacket:msg];
 }
