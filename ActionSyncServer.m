@@ -117,6 +117,7 @@
     }
     else if ( [message.addressPattern isEqualToString:@"/actionsync/subscribe"] )
     {
+        NSLog( @"Subscribing ActionSync client at %@", message.replySocket );
         NSDictionary *subscriber = @{ @"socket": message.replySocket };
         @synchronized( self )
         {
@@ -178,6 +179,7 @@
 
 - (void)netServiceDidPublish:(NSNetService *)sender
 {
+    NSLog( @"Published ActionSync service '%@'", sender.name );
 }
 
 @end

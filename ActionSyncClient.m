@@ -118,7 +118,7 @@
 
 - (void)takeMessage:(F53OSCMessage *)message
 {
-    NSLog( @"take %@", message.addressPattern );
+    NSLog( @"take %@", message );
 
     double now = machTimeInSeconds();
     if ( [message.addressPattern isEqualToString:@"/actionsync/pong"] )
