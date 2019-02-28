@@ -4,7 +4,6 @@
 //
 //  Created by Sean Dougall on 9/9/15.
 //
-//
 
 #import "ActionSyncTypes.h"
 #import "ActionSyncServer.h"

@@ -4,7 +4,6 @@
 //
 //  Created by Sean Dougall on 9/9/15.
 //
-//
 
 #if !__has_feature(objc_arc)
 #error This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to use ARC).
@@ -128,31 +127,32 @@
         return;
     }
     
-    if ( message.addressParts.count == 3 && [message.addressParts.firstObject isEqualToString:@"timeline"] )
+    if ( message.addressParts.count == 3 && [message.addressParts.firstObject isEqualToString:@"actionsync"] )
     {
         NSString *timelineID = message.addressParts[1];
         NSString *action = message.addressParts[2];
         
-        if ( [action isEqualToString:@"start"] )
+        if ( [action isEqualToString:@"status"] )
         {
-            [self handleStartMessage:message.arguments forTimelineID:timelineID];
-        }
-        else if ( [action isEqualToString:@"stop"] )
-        {
-            [self handleStopMessage:message.arguments forTimelineID:timelineID];
-        }
-        else if ( [action isEqualToString:@"scrub"] )
-        {
-            [self handleScrubMessage:message.arguments forTimelineID:timelineID];
-        }
-        else if ( [action isEqualToString:@"rate"] )
-        {
-            [self handleRateChangeMessage:message.arguments forTimelineID:timelineID];
+            [self handleStatusMessage:message.arguments forTimelineID:timelineID];
         }
     }
 }
 
-#pragma mark - Message handling
+#pragma mark - Messages
+
+- (void)sendPing
+{
+    F53OSCMessage *message = [F53OSCMessage new];
+    message.addressPattern = @"/actionsync/ping";
+    self.lastPingMachTime = machTimeInSeconds();
+    [self.oscClient sendPacket:message];
+
+    // Start off by sending pings frequently, then ease up as we get more data.
+    double delay = ( self.offsetMeasurements.count < 10 ? 0.1 : self.offsetMeasurements.count < 25 ? 0.3 : 1.0 );
+    [self.pingTimer invalidate];
+    self.pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(sendPing) userInfo:nil repeats:NO];
+}
 
 // Arguments: <server_host_time:L>
 - (void)handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
@@ -199,41 +199,10 @@
     NSLog( @"%@, %0.06f", measurement, self.averageOffset );
 }
 
-// Arguments: <timeline_location:L> <nominal_rate:f> <server_host_time:L>
-- (void)handleStartMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
+// Arguments: <state:i> <timeline_location:L> <server_host_time:L> <nominal_rate:f>
+- (void)handleStatusMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
 {
 
-}
-
-// Arguments: none
-- (void)handleStopMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
-{
-    
-}
-
-// Arguments: <timeline_location:L>
-- (void)handleScrubMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
-{
-    
-}
-
-// Arguments: <timeline_location:L> <new_rate:f>
-- (void)handleRateChangeMessage:(NSArray *)arguments forTimelineID:(NSString *)timelineID
-{
-    
-}
-
-- (void)sendPing
-{
-    F53OSCMessage *message = [F53OSCMessage new];
-    message.addressPattern = @"/actionsync/ping";
-    self.lastPingMachTime = machTimeInSeconds();
-    [self.oscClient sendPacket:message];
-    
-    // Start off by sending pings frequently, then ease up as we get more data.
-    double delay = ( self.offsetMeasurements.count < 10 ? 0.1 : self.offsetMeasurements.count < 25 ? 0.3 : 1.0 );
-    [self.pingTimer invalidate];
-    self.pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(sendPing) userInfo:nil repeats:NO];
 }
 
 #pragma mark - NSNetServiceBrowserDelegate

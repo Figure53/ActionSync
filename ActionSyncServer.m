@@ -4,7 +4,6 @@
 //
 //  Created by Sean Dougall on 9/9/15.
 //
-//
 
 #if !__has_feature(objc_arc)
 #error This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to use ARC).
@@ -82,12 +81,25 @@
 
 - (void)registerTimeline:(id<ActionSyncServerTimeline>)timeline
 {
-    // TODO: add to self.timelines; observe for @"ActionSyncTimelineStateDidChange" notifications
+    [self.timelines addObject:timeline];
 }
 
 - (void)unregisterTimeline:(id<ActionSyncServerTimeline>)timeline
 {
-    // TODO: remove from self.timelines; remove observation for @"ActionSyncTimelineStateDidChange" notifications
+    [self.timelines removeObject:timeline];
+}
+
+- (void)sendStatus:(ActionSyncStatus)status forTimeline:(id<ActionSyncServerTimeline>)timeline
+{
+    NSString *timelineID = [timeline timelineIDForSyncServer:self];
+
+    NSLog( @"/actionsync/%@/status %@ %@ %@ %@", timelineID, @(status.state), @(ActionSyncLocationGetSeconds(status.location)), @(ActionSyncLocationGetSeconds(status.hostTime)), @(status.rate) );
+
+    for ( NSDictionary *subscriber in self.subscribers )
+    {
+        F53OSCSocket *socket = subscriber[@"socket"];
+        [self sendStatus:status forTimelineID:timelineID toSocket:socket];
+    }
 }
 
 #pragma mark - F53OSCPacketDestination
@@ -113,7 +125,12 @@
     }
     else if ( [message.addressPattern isEqualToString:@"/actionsync/catchup"] )
     {
-        
+        for ( id<ActionSyncServerTimeline> timeline in self.timelines )
+        {
+            NSString *timelineID = [timeline timelineIDForSyncServer:self];
+            ActionSyncStatus currentStatus = [timeline timelineStatusForSyncServer:self];
+            [self sendStatus:currentStatus forTimelineID:timelineID toSocket:message.replySocket];
+        }
     }
     else if ( [message.addressPattern isEqualToString:@"/actionsync/unsubscribe"] )
     {
@@ -128,49 +145,28 @@
 - (void)sendPongToSocket:(F53OSCSocket *)socket
 {
     double now = machTimeInSeconds();
-    ActionSyncLocation nowAsLocation = ActionSyncLocationMakeWithSeconds( now );
+    ActionSyncLocation nowAsLocation = ActionSyncLocationMakeWithSeconds(now);
+
     F53OSCMessage *pong = [F53OSCMessage new];
     pong.addressPattern = @"/actionsync/pong";
-    pong.arguments = @[ @( nowAsLocation.seconds ), @( nowAsLocation.fraction ) ];
+    pong.arguments = @[ @(nowAsLocation.seconds), @(nowAsLocation.fraction) ];
+    // TODO: optional string argument received from ping
+
     [socket sendPacket:pong];
 }
 
-- (void)sendStartMessageForTimelineID:(NSString *)timelineID
-                     timelineLocation:(double)timelineLocationSeconds
-                          nominalRate:(float)nominalRate
-                       serverHostTime:(double)serverHostTimeSeconds
+- (void)sendStatus:(ActionSyncStatus)status
+     forTimelineID:(NSString *)timelineID
+          toSocket:(F53OSCSocket *)socket
 {
-    ActionSyncLocation timelineLocation = ActionSyncLocationMakeWithSeconds( timelineLocationSeconds );
-    ActionSyncLocation serverHostTime = ActionSyncLocationMakeWithSeconds( serverHostTimeSeconds );
+    if ( timelineID == nil || socket == nil )
+        return;
+
     F53OSCMessage *msg = [F53OSCMessage new];
-    msg.addressPattern = [NSString stringWithFormat:@"/actionsync/%@/start", timelineID];
-    msg.arguments = @[ @( timelineLocation.seconds ), @( timelineLocation.fraction ), @( nominalRate ), @( serverHostTime.seconds ), @( serverHostTime.fraction ) ];
-    // TODO: finish this
-}
+    msg.addressPattern = [NSString stringWithFormat:@"/actionsync/%@/status", timelineID];
+    msg.arguments = @[ @(status.state), @(status.location.seconds), @(status.location.fraction), @(status.hostTime.seconds), @(status.hostTime.fraction), @(status.rate) ];
 
-- (void)sendStopMessageForTimelineID:(NSString *)timelineID
-                    timelineLocation:(double)timelineLocationSeconds
-{
-    // TODO: this
-}
-
-- (void)sendScrubMessageForTimelineID:(NSString *)timelineID
-                     timelineLocation:(double)timelineLocationSeconds
-{
-    // TODO: this
-}
-
-- (void)sendRateMessageForTimelineID:(NSString *)timelineID
-                    timelineLocation:(double)timelineLocationSeconds
-                      newNominalRate:(float)nominalRate
-{
-    // TODO: this
-}
-
-- (void)sendLoadMessageForTimelineID:(NSString *)timelineID
-                    timelineLocation:(float)timelineLocationSeconds
-{
-    // TODO: this
+    [socket sendPacket:msg];
 }
 
 #pragma mark - NSNetServiceDelegate

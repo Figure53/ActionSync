@@ -4,7 +4,6 @@
 //
 //  Created by Sean Dougall on 9/9/15.
 //
-//
 
 // In ActionSync nomenclature, a "location" is a point on a timeline, in seconds.
 // OSC doesn't support types with more than 32 bits of resolution, so we split it
@@ -19,3 +18,15 @@ ActionSyncLocation ActionSyncLocationMake(uint32_t seconds, uint32_t fraction);
 ActionSyncLocation ActionSyncLocationMakeWithSeconds(double seconds);
 double ActionSyncLocationGetSeconds(ActionSyncLocation location);
 double machTimeInSeconds();
+double machTimeToSeconds(uint64_t mach_time);
+
+enum ActionSyncState { ActionSyncStateStopped = 0, ActionSyncStatePaused = 1, ActionSyncStateRunning = 2 };
+
+typedef struct {
+    int32_t state;
+    ActionSyncLocation location;
+    ActionSyncLocation hostTime;
+    float rate;
+} ActionSyncStatus;
+
+ActionSyncStatus ActionSyncStatusMake(int32_t state, double location, double hostTime, float rate);

@@ -47,6 +47,35 @@ Timecode is a stream of addresses. It was designed to drive analog tape, and whi
 
 We assume that if strict clocking is required, some other high-resolution clocking mechanism will be used (e.g. AVB or word clock). For many theatrical uses, such as lighting, video, or even short audio cues, strict clocking is not necessary. In these cases, events on separate machines can be effectively synchronized within the margin of clocking error that results from periodic address checks combined with an explicit nominal rate.
 
+
+## Messages sent by client
+
+### `/actionsync/ping`
+
+Arguments: none
+
+Clients send this to request a `/actionsync/pong` message from the server. Use the roundtrip time for these two messages to calculate an estimated one-way latency. Since this latency calculation is critical, `/actionsync/ping` should be sent relatively frequently until a good sense of the netwok latency is achieved. After that, it can be sent less frequently.
+
+### `/actionsync/subscribe`
+
+Arguments: none
+
+Clients send this mesage to the server to begin receiving `/actionsync/<id>/status` messages. By leaving the TCP connection open after sending this, the client provides the server with a reply port, with the server needing no prior knowledge of the client's configuration.
+
+### `/actionsync/catchup`
+
+Arguments: none
+
+Clients may send this once enough latency calculations have been made to establish an offset from the server's host time. This invites the server to send `/actionsync/<id>/status` messages for all current timelines. If a client is not interested in playback that began before it connected up, it may opt not to send this message.
+
+### `/actionsync/unsubscribe`
+
+Arguments: none
+
+Clients should send this before disconnecting, as a courtesy notice to the server that it may stop sending to a particular client.
+
+
+
 ## Messages sent by server
 
 ### `/actionsync/pong`
@@ -56,64 +85,21 @@ Arguments: `server host time` ([time](#time-def))
 Sent in response to `/actionsync/ping`.
 
 
-### `/actionsync/<id>/start`
+### `/actionsync/<id>/status`
 
-Arguments: `timeline location` ([time](#time-def)), `nominal rate` (float), `server host time` ([time](#time-def))
+Arguments: `state` (int), `timeline location` ([time](#time-def)), `server host time` ([time](#time-def)), `nominal rate` (float)
 
-Sent when any timeline starts, or in response to `/actionsync/catchup` for each timeline that is currently running. When a client receives this message, it should start the corresponding timeline, using `timeline location` as an anchor point and extrapolating from its knowledge of the server's host time.
+Sent when the status of a timeline changes, or in response to `/actionsync/catchup`. Only the first argument is required. Subsequent arguments are optional in an additive manner. For example: if `server host time` is provided, `timeline location` must also be provided.
 
-Note: Receiving this message is, aside from the ping cycle, the only time when the client cares about the server host time. 
+Argument details:
 
+ | argument |            | description  |
+ | -------- | ---------- | ------------ |
+ | `state`  | required | 0 = stopped, 1 = paused, 2 = running |
+ | `timeline location` | optional | The location on the timeline where the state change did happen or will happen in the future.  All timelines start at location zero (0). If location is not provided, the state change specified by `state` should be applied immediately. |
+ | `server host time` | optional | The host time, in seconds, when the state change did happen or will happen in the future. If provided, the client may use its knowledge of the offset between the server host time and the client host time to schedule the state change on the client. If not provided, the client may use its local knowledge of the current timeline location to schedule a state change on the client corresponding to the given `timeline location`. |
+ | `nominal rate` | optional | The nominal playback rate of the timeline at the given timeline location. Nominal rate is only meaningful when the `state` is "running" (2). If the state is not currently running this message may be ignored. Default is 1.0. |
 
-### `/actionsync/<id>/stop`
-
-Arguments: `timeline location` ([time](#time-def), optional)
-
-Stops the corresponding timeline. If `timeline location` is provided and in the past, the timeline's playhead should scrub back to that position to end at the same time as the server. If it is provided and in the future, the client should schedule a stop at the appropriate moment in the timeline. If not provided, the client should simply stop the timeline immediately.
-
-
-### `/actionsync/<id>/scrub`
-
-Arguments: `timeline location` ([time](#time-def))
-
-Scrubs the timeline, leaving it paused at `timeline location`.
-
-
-### `/actionsync/<id>/rate`
-
-Arguments: `timeline location` ([time](#time-def)), `new nominal rate` (float)
-
-Denotes a change in the nominal playback rate of the timeline. Clients should use `timeline location` as a new anchor point for all timing calculations occurring after this rate change.
-
-
-## Messages sent by client
-
-### `/actionsync/subscribe`
-
-Arguments: none
-
-Clients send this mesage to the server to begin receiving /start, /stop, /scrub, and /rate messages. By leaving the TCP connection open after sending this, the client provides the server with a reply port, with the server needing no prior knowledge of the client's configuration.
-
-
-### `/actionsync/ping`
-
-Arguments: none
-
-Clients send this to request a `/actionsync/pong` message from the server. Use the roundtrip time for these two messages to calculate an estimated one-way latency. Since this latency calculation is critical, `/actionsync/ping` should be sent relatively frequently until a good sense of the netwok latency is achieved. After that, it can be sent less frequently.
-
-
-### `/actionsync/catchup`
-
-Arguments: none
-
-Clients may send this once enough latency calculations have been made to establish an offset from the server's host time. This invites the server to send `/actionsync/start` messages for any timelines that are currently running, or `/actionsync/scrub` messages for any timelines that are currently paused. If a client is not interested in playback that began before it connected up, it may opt not to send this message.
-
-
-### `/actionsync/unsubscribe`
-
-Arguments: none
-
-Clients should send this before disconnecting, as a courtesy notice to the server that it may stop sending to a particular client.
 
 
 <a name="time-def"></a>

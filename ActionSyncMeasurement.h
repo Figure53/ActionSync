@@ -4,7 +4,6 @@
 //
 //  Created by Sean Dougall on 9/15/15.
 //
-//
 
 #import <Foundation/Foundation.h>
 
