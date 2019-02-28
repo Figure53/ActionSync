@@ -23,7 +23,7 @@
 
 - (void)syncClientStartTimelineID:(NSString *)timelineID
                          withRate:(float)rate
-                       atLocation:(double)location
+                       atLocation:(double)locationInSeconds
                        atHostTime:(double)hostTimeInSeconds;
 
 - (void)syncClientPauseTimelineID:(NSString *)timelineID
@@ -31,7 +31,7 @@
                        atHostTime:(double)hostTimeInSeconds;
 
 - (void)syncClientStopTimelineID:(NSString *)timelineID
-                      atLocation:(double)location
+                      atLocation:(double)locationInSeconds
                       atHostTime:(double)hostTimeInSeconds;
 
 @end
