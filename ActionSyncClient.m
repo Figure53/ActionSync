@@ -118,7 +118,7 @@
 
 - (void)takeMessage:(F53OSCMessage *)message
 {
-    NSLog( @"take %@", message );
+    NSLog( @"client take: %@", message );
 
     double now = machTimeInSeconds();
     if ( [message.addressPattern isEqualToString:@"/actionsync/pong"] )
@@ -199,7 +199,7 @@
     double slope = ( xyBar - xBar * yBar ) / ( xxBar - xBar * xBar );
     self.averageOffset = yBar - slope * xBar;
 
-    NSLog( @"%@, %0.06f", measurement, self.averageOffset );
+    //NSLog( @"%@, average offset: %0.06f", measurement, self.averageOffset );
 }
 
 // Arguments: <state:i> <timeline_location:L> <server_host_time:L> <nominal_rate:f>
@@ -215,7 +215,7 @@
     double locationInSeconds = ActionSyncLocationGetSeconds(location);
     double hostTimeInSeconds = ActionSyncLocationGetSeconds(hostTime);
 
-    NSLog( @"timeline %@ status: %@ @ %@ - %@ / %@", timelineID, @(state), @(rate), @(locationInSeconds), @(hostTimeInSeconds) );
+    //NSLog( @"timeline %@ status: %@ @ %@ - %@ / %@", timelineID, @(state), @(rate), @(locationInSeconds), @(hostTimeInSeconds) );
 
     if ( state == ActionSyncStateRunning && self.delegate && [self.delegate respondsToSelector:@selector(syncClientStartTimelineID:withRate:atLocation:atHostTime:)] )
     {
