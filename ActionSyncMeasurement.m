@@ -23,7 +23,7 @@
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat:@"<Sync Measurement; one-way latency: %@, clock offset: %@>", self.oneWayLatency, self.clockOffset];
+    return [NSString stringWithFormat:@"<Sync Measurement; one-way latency: %0.06f, clock offset: %0.06f>", self.oneWayLatency.doubleValue, self.clockOffset.doubleValue];
 }
 
 @end
