@@ -113,7 +113,11 @@
     
     if ( [message.addressPattern isEqualToString:@"/actionsync/ping"] )
     {
-        [self sendPongToSocket:message.replySocket];
+        NSString *pingID = nil;
+        if ( message.arguments.count == 1 )
+            pingID = message.arguments[0];
+
+        [self sendPongToSocket:message.replySocket withPingID:pingID];
     }
     else if ( [message.addressPattern isEqualToString:@"/actionsync/subscribe"] )
     {
@@ -143,7 +147,7 @@
     }
 }
 
-- (void)sendPongToSocket:(F53OSCSocket *)socket
+- (void)sendPongToSocket:(F53OSCSocket *)socket withPingID:(NSString *)pingID
 {
     double now = machTimeInSeconds();
     ActionSyncLocation nowAsLocation = ActionSyncLocationMakeWithSeconds(now);
@@ -151,7 +155,8 @@
     F53OSCMessage *pong = [F53OSCMessage new];
     pong.addressPattern = @"/actionsync/pong";
     pong.arguments = @[ @(nowAsLocation.seconds), @(nowAsLocation.fraction) ];
-    // TODO: optional string argument received from ping
+    if ( pingID )
+        pong.arguments = [pong.arguments arrayByAddingObject:pingID];
 
     [socket sendPacket:pong];
 }

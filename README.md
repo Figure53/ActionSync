@@ -52,9 +52,9 @@ We assume that if strict clocking is required, some other high-resolution clocki
 
 ### `/actionsync/ping`
 
-Arguments: none
+Arguments: `ping_id` (optional string)
 
-Clients send this to request a `/actionsync/pong` message from the server. Use the roundtrip time for these two messages to calculate an estimated one-way latency. Since this latency calculation is critical, `/actionsync/ping` should be sent relatively frequently until a good sense of the netwok latency is achieved. After that, it can be sent less frequently.
+Clients send this to request a `/actionsync/pong` message from the server. Use the roundtrip time for these two messages to calculate an estimated one-way latency. Since this latency calculation is critical, `/actionsync/ping` should be sent relatively frequently until a good sense of the netwok latency is achieved. After that, it can be sent less frequently. If the optional `ping_id` argument is sent, the client expects to receive the same argument back in the corresponding `pong` message. This ensures the client can match up the send/receive times when calculating the latency.
 
 ### `/actionsync/subscribe`
 
@@ -80,9 +80,9 @@ Clients should send this before disconnecting, as a courtesy notice to the serve
 
 ### `/actionsync/pong`
 
-Arguments: `server host time` ([time](#time-def))
+Arguments: `server_host_time` ([time](#time-def)), `ping_id` (optional string)
 
-Sent in response to `/actionsync/ping`.
+Sent in response to `/actionsync/ping`.  If the `ping` message included a `ping_id` argument, the corresponding `pong` message must send the same ID back to the client.
 
 
 ### `/actionsync/<id>/status`

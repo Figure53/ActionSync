@@ -24,6 +24,7 @@
 
 @property (strong) NSTimer *pingTimer;
 @property (assign) double lastPingMachTime;
+@property (strong) NSMutableDictionary *machTimeByPingID;
 @property (strong) NSMutableArray *offsetMeasurements;
 @property (assign) double averageOffset;
 
@@ -47,6 +48,7 @@
 
         self.pingTimer = nil;
         self.lastPingMachTime = 0;
+        self.machTimeByPingID = [NSMutableDictionary dictionary];
         self.offsetMeasurements = [NSMutableArray array];
         self.averageOffset = 0;
     }
@@ -118,7 +120,7 @@
 
 - (void)takeMessage:(F53OSCMessage *)message
 {
-    NSLog( @"client take: %@", message );
+    NSLog( @"client got message: %@", message );
 
     double now = machTimeInSeconds();
     if ( [message.addressPattern isEqualToString:@"/actionsync/pong"] )
@@ -143,10 +145,18 @@
 
 - (void)sendPing
 {
+    NSString *pingID = [[NSUUID UUID] UUIDString];
     F53OSCMessage *message = [F53OSCMessage new];
     message.addressPattern = @"/actionsync/ping";
+    message.arguments = @[ pingID ];
+
     self.lastPingMachTime = machTimeInSeconds();
+
     [self.oscClient sendPacket:message];
+
+    @synchronized( self.machTimeByPingID ) {
+        [self.machTimeByPingID setObject:@(self.lastPingMachTime) forKey:pingID];
+    }
 
     // Start off by sending pings frequently, then ease up as we get more data.
     double delay = ( self.offsetMeasurements.count < 10 ? 0.1 : self.offsetMeasurements.count < 25 ? 0.3 : 1.0 );
@@ -154,15 +164,39 @@
     self.pingTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(sendPing) userInfo:nil repeats:NO];
 }
 
-// Arguments: <server_host_time:L>
-- (void)handlePong:(NSArray *)arguments atMachTime:(double)machTimeInSeconds
+// Arguments: <server_host_time:L> <ping_id:s>
+- (void)handlePong:(NSArray *)arguments atMachTime:(double)pongReceivedMachTime
 {
-    if ( arguments.count != 2 )
+    if ( arguments.count < 2 )
         return;
 
-    double oneWayLatency = ( machTimeInSeconds - self.lastPingMachTime ) * 0.5;
+    NSString *pingID = nil;
+    if ( arguments.count == 3 )
+        pingID = arguments[2];
+
+    double pingSentMachTime = self.lastPingMachTime;
+
+    @synchronized( self.machTimeByPingID )
+    {
+        if ( pingID != nil )
+        {
+            NSNumber *storedMachTime = self.machTimeByPingID[pingID];
+            if ( storedMachTime )
+            {
+                pingSentMachTime = storedMachTime.doubleValue;
+                [self.machTimeByPingID removeObjectForKey:pingID];
+            }
+        }
+        else
+        {
+            // Server is failing to send back ping IDs; don't let them pile up.
+            [self.machTimeByPingID removeAllObjects];
+        }
+    }
+
+    double oneWayLatency = ( pongReceivedMachTime - pingSentMachTime ) * 0.5;
+    double estimatedLocalTime = pingSentMachTime + oneWayLatency;
     ActionSyncLocation serverHostLocation = ActionSyncLocationMake( [arguments[0] intValue], [arguments[1] intValue] );
-    double estimatedLocalTime = self.lastPingMachTime + oneWayLatency;
     double serverHostTime = ActionSyncLocationGetSeconds( serverHostLocation );
     double secondsToAdd = estimatedLocalTime - serverHostTime;
     
@@ -199,7 +233,7 @@
     double slope = ( xyBar - xBar * yBar ) / ( xxBar - xBar * xBar );
     self.averageOffset = yBar - slope * xBar;
 
-    //NSLog( @"%@, average offset: %0.06f", measurement, self.averageOffset );
+    NSLog( @"%@, average offset: %0.06f", measurement, self.averageOffset );
 }
 
 // Arguments: <state:i> <timeline_location:L> <server_host_time:L> <nominal_rate:f>
