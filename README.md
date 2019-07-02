@@ -107,3 +107,8 @@ All arguments are required:
 ## Time structure
 
 OSC's native types are limited to 32 bits, which is insufficient for high-precision timing. So for arguments listed as "time" above, we take an approach similar to NTP and OSC's time tag structure, splitting the time in seconds into two 32-bit integers. The first carries the integer portion of the value, while the second carries the remainder (multiplied by 2^32).
+
+
+## Research and References
+
+ - Infocomm 2019 Time Code Geekout Wrapup: http://controlgeek.net/blog/2019/6/29/controlgeeknettimberspring-orlando-2019-time-code-geekout-wrapup
